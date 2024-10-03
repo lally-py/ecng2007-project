@@ -44,7 +44,7 @@ sounddevice
 python-dotenv
 ```
 
-### 5. Set up Environment Variables
+### 5. Set up Environment Variables (Message me for API Key)
 - Create a `.env` file in the project root directory and add your OpenAI API key:
 ```
 OPENAI_API_KEY=your_openai_api_key
