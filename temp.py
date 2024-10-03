@@ -14,6 +14,7 @@ import whisper
 import numpy as np
 import sounddevice as sd
 import time
+from dotenv import load_dotenv
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -27,8 +28,12 @@ import time
 # ----------------------------------------------------------------------------------------------------------------------------------------------
 
 
-# Set your OpenAI API key (Ensure to keep this secure in real applications)
-openai_api_key =     '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'
+# Load environment variables from the .env file
+load_dotenv()
+
+# Set your OpenAI API key from the .env file
+openai_api_key = os.getenv('OPENAI_API_KEY')
+
 
 # Define the list of questions and their corresponding field names
 questions = [
