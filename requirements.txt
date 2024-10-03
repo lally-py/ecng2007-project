@@ -1,0 +1,14 @@
+customtkinter
+pyaudio
+wave
+tempfile
+threading
+requests
+pyttsx3
+speech_recognition
+openai
+Pillow
+whisper
+numpy
+sounddevice
+python-dotenv
