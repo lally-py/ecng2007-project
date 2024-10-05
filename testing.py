@@ -1,3 +1,5 @@
+# Testing program without rewording at each stage, and just a final resume generation which does all the rewording and formatting.
+
 import customtkinter as ctk
 from tkinter import messagebox
 import os
@@ -16,28 +18,11 @@ import sounddevice as sd
 import time
 from dotenv import load_dotenv
 
-# ----------------------------------------------------------------------------------------------------------------------------------------------
-
-# prompts for rewording added but not functioning correctly -- fixed 
-# for visual part let it be read back to the user -- done 
-# update chatgpt promopt -- done this for the basic prompt 
-# add new ke words, redo, accept, finish, stop, stop recording, skip question, skip for voice walkthrough  -- works edxcept the stop recording part since it cuts you off and starts a new listening chunk which disregaurds all the previous data that was gathered and transcribed
-# write a function that takes the concatenation of all the text and then takes all the useful information out of it and removes any repitition, while assuming for name that the last one said before stop recoding is the right one. but it has to spell your name back out to you so that you can confirm that it is right, same thing for the email, adress and any other information that can be sensitive to errors in speech recognition. 
-# when using the manual part it does not append the text that was just transcribed to be reworded in the reword text function properly -- fixed 
-
-
-# Write test code for this : 
-# try one final reword, instead of letting it reword each time 
-
-# ----------------------------------------------------------------------------------------------------------------------------------------------
-
-
 # Load environment variables from the .env file
 load_dotenv()
 
 # Set your OpenAI API key from the .env file
 openai_api_key = os.getenv('OPENAI_API_KEY')
-
 
 # Define the list of questions and their corresponding field names
 questions = [
@@ -80,32 +65,9 @@ field_mapping = {
     "Please list your professional associations separated by commas.": "[PROFESSIONAL ASSOCIATIONS SEPARATED BY COMMAS]"
 }
 
-# Define unique rewording prompts for each question
-reword_prompts = {
-    "Please say your name.": "Ensure the name is properly capitalized and formatted for a professional resume.",
-    "Please provide your contact number.": "Format the contact number in a standard professional format (e.g., +1-234-567-8901).",
-    "Please provide your email address.": "Ensure the email address is correctly formatted and professional.",
-    "Please provide your address.": "Reformat the address to a standard professional resume format.",
-    "Please describe yourself with personal descriptions separated by commas.": "Reword the personal descriptions to highlight key professional attributes suitable for a resume.",
-    "Please list your skills separated by commas.": "Organize and rephrase the skills into clear, concise bullet points suitable for a resume.",
-    "Please list your certifications and training separated by commas.": "Rephrase the certifications and training details into a professional format for a resume.",
-    "Please list your professional achievements separated by commas.": "Highlight and rephrase the professional achievements to emphasize their impact and relevance.",
-    "Please describe your prior workplace.": "Provide a concise and professional description of the prior workplace.",
-    "Please provide your job title or position in the prior workplace.": "Ensure the job title or position is accurately and professionally stated.",
-    "Please list key projects separated by commas.": "Rephrase the key projects into detailed bullet points that highlight responsibilities and outcomes.",
-    "Please describe your prior education institution and dates.": "Format the prior education details into a professional resume style, including institution name and dates attended.",
-    "Please describe your current education institution and dates.": "Format the current education details into a professional resume style, including institution name and dates attended.",
-    "Please list your interests separated by commas.": "Organize and rephrase the interests into clear, concise bullet points suitable for a resume.",
-    "Please describe your extracurricular activities separated by commas and elaboration.": "Rephrase the extracurricular activities to highlight roles, responsibilities, and skills developed.",
-    "Please describe your volunteer experience separated by commas and elaboration.": "Rephrase the volunteer experience to emphasize contributions and impact in a professional manner.",
-    "Please list your professional associations separated by commas.": "Ensure the professional associations are accurately and professionally stated."
-}
-
-
 # Initialize global variables
 current_question = 0
 transcribed_responses = {}
-reworded_responses = {}
 add_more_flag = False  # Flag to indicate if we are adding more to the response
 
 # Threading events
@@ -115,57 +77,6 @@ stop_recording_event = threading.Event()
 def update_status(message):
     if 'status_label' in globals():
         status_label.configure(text=f"Status: {message}")
-
-
-# Function to reword text using OpenAI GPT via API with unique prompts
-def reword_text(text, question):
-    try:
-        update_status("Rewording text...")
-        
-        # Fetch the unique prompt for the current question
-        instruction = reword_prompts.get(question, "Reword the following text for better grammar and professional tone suitable for a resume.")
-        
-        # Combine the instruction with the text to be reworded
-        prompt = f"{instruction}\n\nText to reword:\n{text}"
-        print(f"Prompt sent to OpenAI:\n{prompt}")
-        
-        api_url = 'https://api.openai.com/v1/chat/completions'
-
-        headers = {
-            'Authorization': f'Bearer {openai_api_key}',
-            'Content-Type': 'application/json'
-        }
-
-        data = {
-            "model": "gpt-3.5-turbo",
-            "messages": [
-                # You can customize the system prompt if needed
-                {"role": "system", "content": "You are an assistant that rewords text for professional resumes."},
-                {"role": "user", "content": prompt}
-            ],
-            "max_tokens": 150,
-            "n": 1,
-            "temperature": 0.7
-        }
-
-        response = requests.post(api_url, headers=headers, json=data)
-        response.raise_for_status()
-
-        result = response.json()
-        reworded = result['choices'][0]['message']['content'].strip()
-        update_status("Rewording completed.")
-        return reworded
-    except requests.exceptions.HTTPError as http_err:
-        print(f"HTTP error occurred: {http_err}")
-        print(f"Response content: {response.content}")
-        messagebox.showerror("Error", f"HTTP error during rewording: {http_err}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        messagebox.showerror("Error", f"Rewording failed: {e}")
-    update_status("Ready")
-    return text
-
-
 
 # Function to handle recording and transcribing for voice mode
 def record_and_transcribe_response(record_seconds):
@@ -274,7 +185,6 @@ def listen_and_transcribe(recognizer, microphone):
         messagebox.showerror("Error", f"Error during listening: {e}")
         return None
 
-
 # Function to listen for voice commands
 def listen_for_command(recognizer, microphone):
     try:
@@ -297,11 +207,10 @@ def listen_for_command(recognizer, microphone):
     except sr.RequestError as e:
         messagebox.showerror("Error", f"Could not request results from Google Speech Recognition service; {e}")
         return None
-    
 
 # Function to perform the voice-assisted walkthrough
 def voice_walkthrough():
-    global transcribed_responses, reworded_responses
+    global transcribed_responses
     engine = pyttsx3.init()
     engine.setProperty('rate', 200)  # Adjust speech rate if necessary
 
@@ -327,15 +236,11 @@ def voice_walkthrough():
             if transcription_text is None:
                 # If there was an error or no response, skip this question
                 transcribed_responses[question] = ""
-                reworded_responses[question] = ""
                 break  # Move to next question
 
-            # Reword the response with the current question
-            reworded = reword_text(transcription_text, question)
-
-            # Read back the reworded response
-            engine.say("Your reworded response is:")
-            engine.say(reworded)
+            # Read back the response
+            engine.say("Your response is:")
+            engine.say(transcription_text)
             engine.runAndWait()
 
             # Now listen for command
@@ -352,7 +257,6 @@ def voice_walkthrough():
                 elif 'accept' in command:
                     # Save responses
                     transcribed_responses[question] = transcription_text
-                    reworded_responses[question] = reworded
                     question_accepted = True
                     break  # Exit inner while loop, proceed to next question
                 elif 'redo' in command:
@@ -362,7 +266,6 @@ def voice_walkthrough():
                 elif 'skip' in command or 'skip question' in command:
                     # Skip the current question
                     transcribed_responses[question] = ""
-                    reworded_responses[question] = ""
                     question_accepted = True
                     break  # Exit inner while loop, proceed to next question
                 elif 'finish' in command or 'stop' in command or 'stop recording' in command:
@@ -389,10 +292,9 @@ def voice_walkthrough():
     engine.say("Voice walkthrough completed. Your formatted resume has been generated and saved.")
     engine.runAndWait()
 
-
 # Function to handle recording and transcribing
 def recording_thread_function():
-    global transcribed_responses, reworded_responses, add_more_flag
+    global transcribed_responses, add_more_flag
 
     CHUNK = 1024
     FORMAT = pyaudio.paInt16
@@ -470,25 +372,19 @@ def recording_thread_function():
     # Update the transcription label
     root.after(0, update_transcription_label, transcription_text)
 
-    # After recording is stopped, reword the transcription
-    current_q = questions[current_question]
-    reworded = reword_text(transcription_text, current_q)
-
     # Save responses
+    current_q = questions[current_question]
     if add_more_flag:
         # Append to existing responses
         transcribed_responses[current_q] += " " + transcription_text if current_q in transcribed_responses else transcription_text
-        reworded_responses[current_q] += " " + reworded if current_q in reworded_responses else reworded
     else:
         # Replace existing responses
         transcribed_responses[current_q] = transcription_text
-        reworded_responses[current_q] = reworded
 
     # Reset add_more_flag
     add_more_flag = False
 
     # Schedule GUI updates
-    root.after(0, update_reworded_label, reworded)
     root.after(0, update_resume_preview)
     root.after(0, enable_buttons_after_recording)
     root.after(0, update_status, "Ready")
@@ -505,7 +401,6 @@ def start_recording_thread(add_more=False):
     disable_buttons_for_recording()
     # Update labels to indicate recording
     transcribed_label.configure(text="Transcription: Recording...")
-    reworded_label.configure(text="Reworded: ")
     # Start recording thread
     recording_thread = threading.Thread(target=recording_thread_function)
     recording_thread.start()
@@ -541,10 +436,6 @@ def enable_buttons_after_recording():
 def update_transcription_label(transcription_text):
     transcribed_label.configure(text=f"Transcription: {transcription_text}")
 
-# Function to update the reworded label
-def update_reworded_label(reworded_text):
-    reworded_label.configure(text=f"Reworded: {reworded_text}")
-
 # Function to navigate to the next question
 def next_question_func():
     global current_question
@@ -568,16 +459,11 @@ def update_question():
     question = questions[current_question]
     question_label.configure(text=f"Question {current_question + 1}/{len(questions)}:\n{question}")
 
-    # Update transcription and reworded labels if responses exist
+    # Update transcription label if responses exist
     if question in transcribed_responses:
         transcribed_label.configure(text=f"Transcription: {transcribed_responses[question]}")
     else:
         transcribed_label.configure(text="Transcription: ")
-
-    if question in reworded_responses:
-        reworded_label.configure(text=f"Reworded: {reworded_responses[question]}")
-    else:
-        reworded_label.configure(text="Reworded: ")
 
     # Update progress bar
     progress = (current_question + 1) / len(questions)
@@ -587,20 +473,20 @@ def update_question():
 def generate_resume_text():
     # Define the resume sections based on the provided prompt
     resume_sections = {
-        "Name": reworded_responses.get(questions[0], "").strip(),
-        "Contact Number": reworded_responses.get(questions[1], "").strip(),
-        "Email Address": reworded_responses.get(questions[2], "").strip(),
-        "Address": reworded_responses.get(questions[3], "").strip(),
-        "Professional Summary": reworded_responses.get(questions[4], "").strip(),
-        "Skills": reworded_responses.get(questions[5], "").strip(),
-        "Certifications and Training": reworded_responses.get(questions[6], "").strip(),
-        "Professional Achievements": reworded_responses.get(questions[7], "").strip(),
-        "Work Experience": f"{reworded_responses.get(questions[8], '').strip()}\n{reworded_responses.get(questions[9], '').strip()}\nKey Projects: {reworded_responses.get(questions[10], '').strip()}".strip(),
-        "Education": f"{reworded_responses.get(questions[11], '').strip()}\n{reworded_responses.get(questions[12], '').strip()}".strip(),
-        "Interests": reworded_responses.get(questions[13], "").strip(),
-        "Extracurricular Activities": reworded_responses.get(questions[14], "").strip(),
-        "Volunteer Experience": reworded_responses.get(questions[15], "").strip(),
-        "Professional Associations": reworded_responses.get(questions[16], "").strip(),
+        "Name": transcribed_responses.get(questions[0], "").strip(),
+        "Contact Number": transcribed_responses.get(questions[1], "").strip(),
+        "Email Address": transcribed_responses.get(questions[2], "").strip(),
+        "Address": transcribed_responses.get(questions[3], "").strip(),
+        "Professional Summary": transcribed_responses.get(questions[4], "").strip(),
+        "Skills": transcribed_responses.get(questions[5], "").strip(),
+        "Certifications and Training": transcribed_responses.get(questions[6], "").strip(),
+        "Professional Achievements": transcribed_responses.get(questions[7], "").strip(),
+        "Work Experience": f"{transcribed_responses.get(questions[8], '').strip()}\n{transcribed_responses.get(questions[9], '').strip()}\nKey Projects: {transcribed_responses.get(questions[10], '').strip()}".strip(),
+        "Education": f"{transcribed_responses.get(questions[11], '').strip()}\n{transcribed_responses.get(questions[12], '').strip()}".strip(),
+        "Interests": transcribed_responses.get(questions[13], "").strip(),
+        "Extracurricular Activities": transcribed_responses.get(questions[14], "").strip(),
+        "Volunteer Experience": transcribed_responses.get(questions[15], "").strip(),
+        "Professional Associations": transcribed_responses.get(questions[16], "").strip(),
         "References": "Available upon request."
     }
 
@@ -687,7 +573,7 @@ def save_responses_to_file():
         with open('responses.txt', 'w', encoding='utf-8') as f:
             for question in questions:
                 field_name = field_mapping.get(question, question)
-                response = reworded_responses.get(question, "")
+                response = transcribed_responses.get(question, "")
                 f.write(f"{field_name} - {response}\n")
     except Exception as e:
         messagebox.showerror("Error", f"Failed to save responses: {e}")
@@ -718,11 +604,11 @@ def save_resume():
 # Function to generate formatted resume via ChatGPT
 def generate_formatted_resume():
     try:
-        # Build the Input section from reworded responses
+        # Build the Input section from transcribed responses
         input_section = ""
         for question in questions:
             field_name = field_mapping.get(question, question)
-            response = reworded_responses.get(question, "")
+            response = transcribed_responses.get(question, "")
             input_section += f"{field_name} - {response}\n"
 
         # Your initial prompt
@@ -734,7 +620,7 @@ Input:
 
 Instructions:
 
-Use the provided details to generate a resume in the following format. Ensure clarity and specificity in each section based on the details given.
+Use the provided details to generate a resume in the following format. Ensure clarity and specificity in each section based on the details given. Reword and refine the content to maintain a professional tone and proper grammar.
 
 Output Format:
 
@@ -832,7 +718,6 @@ def generate_and_save_formatted_resume():
 def skip_question_func():
     current_q = questions[current_question]
     transcribed_responses[current_q] = ""
-    reworded_responses[current_q] = ""
     update_resume_preview()
     next_question_func()
 
@@ -869,7 +754,6 @@ def redo_response():
     # Clear the response for the current question
     current_q = questions[current_question]
     transcribed_responses[current_q] = ""
-    reworded_responses[current_q] = ""
     update_resume_preview()
     start_recording_thread(add_more=False)
 
@@ -997,7 +881,7 @@ def initialize_voice_gui():
 
 # Function to initialize the manual input GUI with voice recording
 def initialize_manual_gui():
-    global question_label, transcribed_label, reworded_label
+    global question_label, transcribed_label
     global start_button, stop_button, next_button, prev_button, save_button, skip_button, generate_button
     global status_label, resume_preview_textbox, decision_frame
 
@@ -1132,7 +1016,7 @@ def initialize_manual_gui():
     )
     status_label.pack(pady=10, padx=20, anchor="w")
 
-    # Labels to display transcription and reworded response
+    # Label to display transcription
     transcribed_label = ctk.CTkLabel(
         root,
         text="Transcription: ",
@@ -1140,14 +1024,6 @@ def initialize_manual_gui():
         font=("Helvetica", 12)
     )
     transcribed_label.pack(pady=5, padx=20, anchor="w")
-
-    reworded_label = ctk.CTkLabel(
-        root,
-        text="Reworded: ",
-        wraplength=760,
-        font=("Helvetica", 12, "bold")
-    )
-    reworded_label.pack(pady=5, padx=20, anchor="w")
 
     # Decision Frame
     decision_frame = ctk.CTkFrame(root, corner_radius=10)
