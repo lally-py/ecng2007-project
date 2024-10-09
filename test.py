@@ -7,10 +7,6 @@
 
 # try writing a function that refines the audio file that is being sent to be transcribed making it more clear and easier for the transctioption process
 
-# i downloaded the ffmepg source code how do i use this in my project, in such a way that when i build the final application this will be packaged along with it so that ther would be no need for the user to download ffmpeg on their own
-
-
-
 import customtkinter as ctk
 from tkinter import messagebox
 import os
