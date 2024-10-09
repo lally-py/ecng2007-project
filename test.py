@@ -3,6 +3,14 @@
 # corrected ui bugs, and fixed text apearing in the manual mode text box for parts that were not done yet
 # fixed problem where add more button would be able to be used even on questions that have not been answered yet.
 
+# There is alot of repetition from the ui talking to you in the voice walkthrough, make it so that you hear the instructions once at the beginning and you can prompt for the instructions again if you need to hear it again
+
+# try writing a function that refines the audio file that is being sent to be transcribed making it more clear and easier for the transctioption process
+
+# i downloaded the ffmepg source code how do i use this in my project, in such a way that when i build the final application this will be packaged along with it so that ther would be no need for the user to download ffmpeg on their own
+
+
+
 import customtkinter as ctk
 from tkinter import messagebox
 import os
@@ -19,6 +27,7 @@ import whisper
 import numpy as np
 import sounddevice as sd
 import time
+import io
 from dotenv import load_dotenv
 
 # Load environment variables from the .env file
@@ -195,96 +204,219 @@ def listen_for_command(recognizer, microphone):
             recognizer.adjust_for_ambient_noise(source)
             print("Listening for command...")
             audio = recognizer.listen(source, timeout=5, phrase_time_limit=5)
-
         # Recognize speech using Google's speech recognition
         command = recognizer.recognize_google(audio)
         print(f"Command recognized: {command}")
         return command.lower()
-
     except sr.UnknownValueError:
-        print("Could not understand command.")
         return None
     except sr.WaitTimeoutError:
-        print("Listening timed out while waiting for command.")
         return None
     except sr.RequestError as e:
         messagebox.showerror("Error", f"Could not request results from Google Speech Recognition service; {e}")
         return None
 
+
+# Function to update the question label in voice mode
+def update_question_voice_mode(idx):
+    question = questions[idx]
+    question_label.configure(text=f"Question {idx + 1}/{len(questions)}:\n{question}")
+    # Update progress bar
+    progress = (idx + 1) / len(questions)
+    progress_bar.set(progress)
+    # Update transcription label if responses exist
+    if question in transcribed_responses and transcribed_responses[question]:
+        transcribed_label.configure(text=f"Transcription: {transcribed_responses[question]}")
+    else:
+        transcribed_label.configure(text="Transcription: ")
+    # Update resume preview
+    update_resume_preview()
+    
+# Function to listen and transcribe with VAD
+def listen_and_transcribe_with_stop_phrase(recognizer, microphone):
+    audio_data = io.BytesIO()
+    stop_phrase_detected = False
+    concatenated_audio = []
+
+    with microphone as source:
+        recognizer.adjust_for_ambient_noise(source)
+        root.after(0, update_status, "Listening...")
+
+        while not stop_phrase_detected:
+            try:
+                # Record a short phrase
+                audio = recognizer.listen(source, timeout=5, phrase_time_limit=5)
+                
+                # Save the audio data
+                concatenated_audio.append(audio.get_wav_data())
+                
+                # Use a temporary recognizer to check for stop phrase
+                temp_recognizer = sr.Recognizer()
+                temp_audio = sr.AudioData(audio.get_raw_data(), audio.sample_rate, audio.sample_width)
+                try:
+                    temp_text = temp_recognizer.recognize_google(temp_audio)
+                    print(f"You said: {temp_text}")
+                    if "stop recording" in temp_text.lower():
+                        stop_phrase_detected = True
+                        # Remove "stop recording" from concatenated audio
+                        concatenated_audio.pop()
+                        break
+                except sr.UnknownValueError:
+                    pass  # Ignore unintelligible speech
+            except sr.WaitTimeoutError:
+                # No speech detected within timeout, continue listening
+                continue
+
+    # Concatenate all audio chunks
+    full_audio_data = b"".join(concatenated_audio)
+
+    # Create an AudioData instance for the full audio
+    full_audio = sr.AudioData(full_audio_data, audio.sample_rate, audio.sample_width)
+
+    # Transcribe the full audio
+    root.after(0, update_status, "Transcribing response...")
+    try:
+        transcription_text = recognizer.recognize_google(full_audio)
+        root.after(0, update_transcription_label, transcription_text)
+        return transcription_text.strip()
+    except sr.UnknownValueError:
+        return None
+    except sr.RequestError as e:
+        messagebox.showerror("Error", f"Could not request results from Google Speech Recognition service; {e}")
+        return None
+
+
 # Function to perform the voice-assisted walkthrough
 def voice_walkthrough():
-    global transcribed_responses
+    global transcribed_responses, current_question
     engine = pyttsx3.init()
-    engine.setProperty('rate', 200)  # Adjust speech rate if necessary
+    engine.setProperty('rate', 180)  # Adjust speech rate if necessary
 
     recognizer = sr.Recognizer()
     microphone = sr.Microphone()
+
+    # Provide initial instructions once
+    initial_instructions = (
+        "Welcome to the voice-assisted resume generator. "
+        "You will be asked a series of questions to build your resume. "
+        "After each question, please provide your response. "
+        "When you have finished speaking, say 'stop recording' to end your response. "
+        "If at any time you need to hear the instructions again, please say 'help' or 'instructions'. "
+        "Let's begin."
+    )
+    engine.say(initial_instructions)
+    engine.runAndWait()
 
     idx = 0
     while idx < len(questions):
         question = questions[idx]
         question_accepted = False
+
+        # Update GUI with current question
+        root.after(0, update_question_voice_mode, idx)
+
         while not question_accepted:
             # Update status
             root.after(0, update_status, f"Asking Question {idx+1}/{len(questions)}")
 
             # Speak the question
             engine.say(question)
-            engine.say("Please say your response and say 'stop recording' when you're done.")
             engine.runAndWait()
 
             # Listen and transcribe
-            transcription_text = listen_and_transcribe(recognizer, microphone)
+            transcription_text = listen_and_transcribe_with_stop_phrase(recognizer, microphone)
 
-            if transcription_text is None:
-                # If there was an error or no response, skip this question
-                transcribed_responses[question] = ""
-                break  # Move to next question
-
-            # Read back the response
-            engine.say("Your response is:")
-            engine.say(transcription_text)
-            engine.runAndWait()
-
-            # Now listen for command
-            while True:
-                engine.say("If you are satisfied with this response, please say 'accept'. To redo, say 'redo'. To skip this question, say 'skip'. To finish the walkthrough, say 'finish'.")
+            if transcription_text is None or transcription_text == "":
+                # Handle cases where no response is detected
+                engine.say("I didn't catch that. Would you like to retry or skip this question?")
                 engine.runAndWait()
-
                 command = listen_for_command(recognizer, microphone)
                 if command is None:
-                    # Could not understand command, ask again
-                    engine.say("Sorry, I did not understand. Please say 'accept', 'redo', 'skip', or 'finish'.")
+                    engine.say("Sorry, I did not understand. Skipping this question.")
                     engine.runAndWait()
-                    continue
-                elif 'accept' in command:
-                    # Save responses
-                    transcribed_responses[question] = transcription_text
-                    question_accepted = True
-                    break  # Exit inner while loop, proceed to next question
-                elif 'redo' in command:
-                    # Redo the current question
-                    # Continue the outer while loop to ask the question again
-                    break  # Break out of inner while loop to redo question
-                elif 'skip' in command or 'skip question' in command:
-                    # Skip the current question
                     transcribed_responses[question] = ""
-                    question_accepted = True
-                    break  # Exit inner while loop, proceed to next question
-                elif 'finish' in command or 'stop' in command or 'stop recording' in command:
-                    # Finish the walkthrough
-                    engine.say("Finishing the walkthrough.")
-                    engine.runAndWait()
-                    # Generate and save the formatted resume before exiting
-                    root.after(0, update_status, "Voice Walkthrough Completed")
-                    generate_and_save_formatted_resume()
-                    engine.say("Your formatted resume has been generated and saved.")
-                    engine.runAndWait()
-                    return  # Exit the function
+                    break  # Move to next question
+                elif 'retry' in command or 'redo' in command:
+                    continue  # Ask the question again
+                elif 'skip' in command:
+                    transcribed_responses[question] = ""
+                    break  # Move to next question
                 else:
-                    # Unrecognized command
-                    engine.say("Sorry, I did not understand. Please say 'accept', 'redo', 'skip', or 'finish'.")
+                    engine.say("Sorry, I did not understand. Skipping this question.")
                     engine.runAndWait()
+                    transcribed_responses[question] = ""
+                    break  # Move to next question
+
+            else:
+                # Read back the response
+                engine.say("You said:")
+                engine.say(transcription_text)
+                engine.runAndWait()
+
+                # Now listen for command
+                engine.say("Please say a command such as 'accept', 'add more', 'redo', 'skip', 'finish', or 'help' for instructions.")
+                engine.runAndWait()
+
+                command_recognized = False
+                while not command_recognized:
+                    command = listen_for_command(recognizer, microphone)
+                    if command is None:
+                        engine.say("Sorry, I did not understand. Please say your command again.")
+                        engine.runAndWait()
+                        continue
+                    elif 'accept' in command:
+                        # Save responses
+                        if add_more_flag and question in transcribed_responses:
+                            transcribed_responses[question] += " " + transcription_text
+                        else:
+                            transcribed_responses[question] = transcription_text
+                        add_more_flag = False
+                        question_accepted = True
+                        command_recognized = True
+                    elif 'add more' in command or 'add' in command:
+                        # Set flag to add more to the response
+                        add_more_flag = True
+                        command_recognized = True
+                    elif 'redo' in command or 'retry' in command:
+                        # Redo the current question
+                        # Clear previous response if any
+                        transcribed_responses[question] = ""
+                        add_more_flag = False
+                        command_recognized = True
+                    elif 'skip' in command or 'skip question' in command:
+                        # Skip the current question
+                        transcribed_responses[question] = ""
+                        add_more_flag = False
+                        question_accepted = True
+                        command_recognized = True
+                    elif 'finish' in command or 'stop' in command:
+                        # Finish the walkthrough
+                        engine.say("Finishing the walkthrough.")
+                        engine.runAndWait()
+                        # Generate and save the formatted resume before exiting
+                        root.after(0, update_status, "Voice Walkthrough Completed")
+                        generate_and_save_formatted_resume()
+                        engine.say("Your formatted resume has been generated and saved.")
+                        engine.runAndWait()
+                        return  # Exit the function
+                    elif 'help' in command or 'instructions' in command:
+                        # Repeat the instructions
+                        engine.say(initial_instructions)
+                        engine.runAndWait()
+                        # Re-prompt for command
+                        engine.say("Please say your command.")
+                        engine.runAndWait()
+                    else:
+                        # Unrecognized command
+                        engine.say("Sorry, I did not understand. Please say 'accept', 'add more', 'redo', 'skip', 'finish', or 'help' for instructions.")
+                        engine.runAndWait()
+
+            # If adding more or redoing, continue appropriately
+            if add_more_flag:
+                continue  # Re-ask the question to add more
+            elif not question_accepted:
+                continue  # Re-ask the question if needed
+
         idx += 1  # Move to the next question
 
     # After all questions are done
@@ -444,8 +576,7 @@ def enable_buttons_after_recording():
 # Function to update the transcription label
 def update_transcription_label(transcription_text):
     transcribed_label.configure(text=f"Transcription: {transcription_text}")
-    # Update 'Add More' button state
-    update_add_more_button_state()
+    update_resume_preview()
 
 
 # Function to navigate to the next question
@@ -939,7 +1070,7 @@ def start_voice_mode(start_frame):
 
 # Function to initialize the voice GUI
 def initialize_voice_gui():
-    global status_label
+    global status_label, question_label, transcribed_label, resume_preview_textbox
     # Create a frame for the voice mode
     voice_frame = ctk.CTkFrame(root, corner_radius=10)
     voice_frame.pack(pady=10, padx=20, fill="both", expand=True)
@@ -951,10 +1082,43 @@ def initialize_voice_gui():
         wraplength=760,
         font=("Helvetica", 14, "italic")
     )
-    status_label.pack(pady=20, padx=20, anchor="w")
+    status_label.pack(pady=5, padx=20, anchor="w")
 
-    # Add a placeholder or loading animation if desired
-    # For simplicity, it's omitted here
+    # Label to display the current question
+    question_label = ctk.CTkLabel(
+        voice_frame,
+        text="",
+        wraplength=760,
+        font=("Helvetica", 16, "bold")
+    )
+    question_label.pack(pady=5, padx=20, anchor="w")
+
+    # Label to display transcription
+    transcribed_label = ctk.CTkLabel(
+        voice_frame,
+        text="Transcription: ",
+        wraplength=760,
+        font=("Helvetica", 12)
+    )
+    transcribed_label.pack(pady=5, padx=20, anchor="w")
+
+    # Resume Preview Textbox
+    resume_preview_label = ctk.CTkLabel(
+        voice_frame,
+        text="Resume Preview:",
+        font=("Helvetica", 16, "bold")
+    )
+    resume_preview_label.pack(pady=(10, 5), padx=20, anchor="w")
+
+    resume_preview_textbox = ctk.CTkTextbox(
+        voice_frame,
+        width=760,
+        height=300,
+        wrap="word",
+        font=("Helvetica", 12)
+    )
+    resume_preview_textbox.pack(pady=5, padx=20)
+    resume_preview_textbox.configure(state="disabled")  # Make it read-only
 
 
 def update_add_more_button_state():
