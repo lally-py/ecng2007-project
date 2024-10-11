@@ -1,0 +1,41 @@
+{
+    "questions": [
+      "Please spell your name separated by a space.",
+      "Please provide your contact number.",
+      "Please provide your email address (provide spelling if necessary).",
+      "Please provide your address (provide spelling if necessary).",
+      "Please describe yourself with personal descriptions separated by commas.",
+      "Please list your skills separated by commas.",
+      "Please list your certifications and training separated by commas.",
+      "Please list your professional achievements separated by commas.",
+      "Please describe your prior workplace.",
+      "Please provide your job title or position in the prior workplace.",
+      "Please list key projects separated by commas.",
+      "Please describe your prior education institution and dates.",
+      "Please describe your current education institution and dates.",
+      "Please list your interests separated by commas.",
+      "Please describe your extracurricular activities separated by commas and elaboration.",
+      "Please describe your volunteer experience separated by commas and elaboration.",
+      "Please list your professional associations separated by commas."
+    ],
+    "field_mapping": {
+      "Please spell your name separated by a space.": "[NAME]",
+      "Please provide your contact number.": "[CONTACT NUMBER]",
+      "Please provide your email address (provide spelling if necessary).": "[EMAIL ADDRESS]",
+      "Please provide your address (provide spelling if necessary).": "[ADDRESS]",
+      "Please describe yourself with personal descriptions separated by commas.": "[PERSONAL DESCRIPTIONS SEPARATED BY COMMAS]",
+      "Please list your skills separated by commas.": "[SKILLS SEPARATED BY COMMAS]",
+      "Please list your certifications and training separated by commas.": "[CERTIFICATIONS AND TRAINING SEPARATED BY COMMAS]",
+      "Please list your professional achievements separated by commas.": "[PROFESSIONAL ACHIEVEMENTS SEPARATED BY COMMAS]",
+      "Please describe your prior workplace.": "[PRIOR WORK PLACE]",
+      "Please provide your job title or position in the prior workplace.": "[DESCRIPTION OF POSITION]",
+      "Please list key projects separated by commas.": "[KEY PROJECTS SEPARATED BY COMMAS]",
+      "Please describe your prior education institution and dates.": "[PRIOR EDUCATION INSTITUTION AND DATES OF ATTENDANCE]",
+      "Please describe your current education institution and dates.": "[CURRENT EDUCATION INSTITUTION AND DATES OF ATTENDANCE]",
+      "Please list your interests separated by commas.": "[INTERESTS SEPARATED BY COMMAS]",
+      "Please describe your extracurricular activities separated by commas and elaboration.": "[EXTRACURRICULAR ACTIVITIES SEPARATED BY COMMAS AND ELABORATION]",
+      "Please describe your volunteer experience separated by commas and elaboration.": "[VOLUNTEER EXPERIENCE SEPARATED BY COMMAS AND ELABORATION]",
+      "Please list your professional associations separated by commas.": "[PROFESSIONAL ASSOCIATIONS SEPARATED BY COMMAS]"
+    }
+  }
+  
