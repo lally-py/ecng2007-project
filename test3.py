@@ -1,3 +1,6 @@
+# Ideas :
+
+
 # Enhance the Voice Walkthrough Experience:
 
 # Implement continuous listening with Voice Activity Detection (VAD) to stop recording only after 5 seconds of silence, rather than using fixed recording intervals.
