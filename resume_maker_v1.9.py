@@ -1,20 +1,14 @@
-# complete overhaul of the voice walkthrough system, currently working slightly better than original
+# complete overhaul of the voice walkthrough system, currently working slightly better than original -- done 
 
-# slightly simplified voice walkthrough 
-#   - problem , recording only records for a short period of time and then stops even if you are still speaking
+# slightly simplified voice walkthrough
+#   - problem , recording only records for a short period of time and then stops even if you are still speaking -- fixed
 
-# Testing program without rewording at each stage, and just a final resume generation which does all the rewording and formatting.
+# There is alot of repetition from the ui talking to you in the voice walkthrough, make it so that you hear the instructions once at the beginning and you can prompt for the instructions again if you need to hear it again -- done
 
-# corrected ui bugs, and fixed text apearing in the manual mode text box for parts that were not done yet
-# fixed problem where add more button would be able to be used even on questions that have not been answered yet.
+# try writing a function that refines the audio file that is being sent to be transcribed making it more clear and easier for the transctioption process -- done with webrtcvad
+# Note : the audio is recorded at a sample rate of 16kHz, which is the rate that Whisper models are trained on
 
-# There is alot of repetition from the ui talking to you in the voice walkthrough, make it so that you hear the instructions once at the beginning and you can prompt for the instructions again if you need to hear it again
-
-# try writing a function that refines the audio file that is being sent to be transcribed making it more clear and easier for the transctioption process
-
-# can i make it so that it knows when im talking so it continues recording until there is are like 5 seconds of silence (no talking) for it to continue 
-
-# make it so that while it is listienign to you it detects if you are currently speaking and continues recording until there is are like 5 seconds of silence (no talking) for it to stop and start the transcription process
+# make it so that while it is listienign to you it detects if you are currently speaking and continues recording until there is are like 5 seconds of silence (no talking) for it to stop and start the transcription process -- done
 
 import customtkinter as ctk
 from tkinter import messagebox
@@ -204,30 +198,6 @@ def listen_and_transcribe(recognizer, microphone):
         messagebox.showerror("Error", f"Error during listening: {e}")
         return None
 
-# Function to listen for voice commands
-def listen_for_command(recognizer, microphone):
-    try:
-        with microphone as source:
-            recognizer.adjust_for_ambient_noise(source)
-            print("Listening for command...")
-            audio = recognizer.listen(source, timeout=5, phrase_time_limit=5)  
-        # Recognize speech using Google's speech recognition
-        command = recognizer.recognize_google(audio)
-        print(f"Command recognized: {command}")
-        return command.lower()
-    except sr.UnknownValueError:
-        engine.say("Sorry, I didn't catch that.")
-        engine.runAndWait()
-        return None
-    except sr.WaitTimeoutError:
-        engine.say("No speech detected.")
-        engine.runAndWait()
-        return None
-    except sr.RequestError as e:
-        messagebox.showerror("Error", f"Could not request results from Google Speech Recognition service; {e}")
-        return None
-
-
 
 # Function to update the question label in voice mode
 def update_question_voice_mode(idx):
@@ -256,7 +226,7 @@ def listen_for_command(recognizer, microphone):
             recognizer.adjust_for_ambient_noise(source)
             print("Listening for command...")
             audio = recognizer.listen(source, timeout=5, phrase_time_limit=5)
-        # Recognize speech using Google's speech recognition
+        # Recognize speech using Google's speech recognition``
         command = recognizer.recognize_google(audio)
         print(f"Command recognized: {command}")
         return command.lower()
