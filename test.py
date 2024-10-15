@@ -42,5 +42,7 @@
 # Add a "Clear Data" button that allows users to restart the questionnaire from scratch without manually deleting previous responses.
 # These improvements can make the program more robust, user-friendly, and efficient while providing a better experience for users.
 
-
-
+# TODO : Take the finished version of the resume and ensure that all the information is correct
+#  - After the first walkthrough is complleted save the file and use that for creating the resume itself, then modify that file and see how the template reacts
+#  - Make it so that it firsts get placed into a word doc (formatted), and is then converted to a pdf for the final result
+#  - allow the word doc to be downloaded as well so personal modification can be done as well 
