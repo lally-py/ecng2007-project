@@ -1,15 +1,53 @@
-# complete overhaul of the voice walkthrough system, currently working slightly better than original -- done 
+#--------------------------------------------------------DONE---------------------------------------------------------------------------------#
 
-# slightly simplified voice walkthrough
-#   - problem , recording only records for a short period of time and then stops even if you are still speaking -- fixed
+# add an option to adjust the speech rate and tone of the text-to-speech engine , do this by adding in a settings page to the program preferably with a top menu bar that would have settings, help etc. -- done
 
-# There is alot of repetition from the ui talking to you in the voice walkthrough, make it so that you hear the instructions once at the beginning and you can prompt for the instructions again if you need to hear it again -- done
+#add a language model selection option for improved accuracy in different languages or accents. (change language to predominantly english allow user to select between the major languages (english and spanish and frecnch)  -- done
 
-# try writing a function that refines the audio file that is being sent to be transcribed making it more clear and easier for the transctioption process -- done with webrtcvad
-# Note : the audio is recorded at a sample rate of 16kHz, which is the rate that Whisper models are trained on
+# Improve accessibility by adding keyboard shortcuts for navigation and common actions (e.g., starting/stopping recording). with keyboard keys, add help menu for instuctions on different operations  -- done
 
-# make it so that while it is listienign to you it detects if you are currently speaking and continues recording until there is are like 5 seconds of silence (no talking) for it to stop and start the transcription process -- done
+# Use configuration files (e.g., JSON or YAML) for managing questions, making it easier to add, remove, or modify questions without changing the code. -- done
 
+# remove the hardcoded resume generation prompt from in the code and move it to its own file -- done
+
+# Introduce a "pause recording" feature in addition to start/stop, for more flexibility during the voice walkthrough. -- done
+
+# since file size limit is 25 mb, determine how long a recording would take to meet this file size,  1mb per 30 seconds , 25mb = 12.5 minutes, this should be stated in the help menu -- done
+#-----------------------------------------------------------------------------------------------------------------------------------------#
+
+
+#----------------------------------------------------UNDONE-------------------------------------------------------------------------------------#
+
+# Implement more detailed error messages and logging for debugging purposes. Display user-friendly notifications when network or API issues occur and Introduce a retry mechanism for API calls that fail due to temporary issues, instead of immediately showing an error message. -- undone
+
+# Provide an option to export the resume in various formats (e.g., PDF, Word). -- undone
+
+# Implement a feature to autosave user responses at intervals, preventing data loss if the program crashes. -- undone
+
+# Add a "Clear Data" button that allows users to restart the questionnaire from scratch without manually deleting previous responses, will ask for confimation before clearing whne pressed -- undone
+
+# add a timer that shows how long you have been recording for 
+#-----------------------------------------------------------------------------------------------------------------------------------------#
+
+
+# TODO :
+#  - After the first walkthrough is complleted save the file and use that for creating the resume itself, then modify that file and see how the template reacts
+#  - Make it so that it firsts get placed into a word doc (formatted), and is then converted to a pdf for the final result
+#  - allow the word doc to be downloaded as well so personal modification can be done as well 
+#  - check if it is possible to get a nicer voice to talk to you in the voice assisted version
+
+
+# make it so that you can email the finished resume to yourself if you want to by typing in your email address, create an email adress and get SMTP adress so i can create it (email name should be somthing along the lines of resume generator)
+
+
+# TODO : based on documentation
+# add user auth page
+# add feedback loop - that will send data on completion back to somewhere
+# data retention and deletion policy for when the data is sent 
+# all data is saved locally on your system and is not sent to any server/system. 
+# AUTO BACKUP INCASE OF CRASH WILL HAVE A SAVE AT LAST checkpoint
+
+    
 import customtkinter as ctk
 from tkinter import messagebox
 import os
@@ -29,6 +67,8 @@ import time
 import io
 import webrtcvad
 import collections
+from fuzzywuzzy import process
+import json
 from dotenv import load_dotenv
 
 # Load environment variables from the .env file
@@ -37,46 +77,30 @@ load_dotenv()
 # Set your OpenAI API key from the .env file
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
-# Define the list of questions and their corresponding field names
-questions = [
-    "Please spell your name seperated by a space.",
-    "Please provide your contact number.",
-    "Please provide your email address(provide spelling if necessary).",
-    "Please provide your address(provide spelling if necessary).",
-    "Please describe yourself with personal descriptions separated by commas.",
-    "Please list your skills separated by commas.",
-    "Please list your certifications and training separated by commas.",
-    "Please list your professional achievements separated by commas.",
-    "Please describe your prior workplace.",
-    "Please provide your job title or position in the prior workplace.",
-    "Please list key projects separated by commas.",
-    "Please describe your prior education institution and dates.",
-    "Please describe your current education institution and dates.",
-    "Please list your interests separated by commas.",
-    "Please describe your extracurricular activities separated by commas and elaboration.",
-    "Please describe your volunteer experience separated by commas and elaboration.",
-    "Please list your professional associations separated by commas."
-]
+# Loads questions and their field mappings from a JSON file.
+def load_questions(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            questions = [q['question'] for q in data['questions']]
+            field_mapping = {q['question']: q['field'] for q in data['questions']}
+        return questions, field_mapping
+    except FileNotFoundError:
+        messagebox.showerror("Error", f"Configuration file '{file_path}' not found.")
+        return [], {}
+    except json.JSONDecodeError as e:
+        messagebox.showerror("Error", f"Error parsing '{file_path}': {e}")
+        return [], {}
+    except KeyError as e:
+        messagebox.showerror("Error", f"Missing key in '{file_path}': {e}")
+        return [], {}
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to load questions: {e}")
+        return [], {}
 
-field_mapping = {
-    "Please say your name.": "[NAME]",
-    "Please provide your contact number.": "[CONTACT NUMBER]",
-    "Please provide your email address.": "[EMAIL ADDRESS]",
-    "Please provide your address.": "[ADDRESS]",
-    "Please describe yourself with personal descriptions separated by commas.": "[PERSONAL DESCRIPTIONS SEPARATED BY COMMAS]",
-    "Please list your skills separated by commas.": "[SKILLS SEPARATED BY COMMAS]",
-    "Please list your certifications and training separated by commas.": "[CERTIFICATIONS AND TRAINING SEPARATED BY COMMAS]",
-    "Please list your professional achievements separated by commas.": "[PROFESSIONAL ACHIEVEMENTS SEPARATED BY COMMAS]",
-    "Please describe your prior workplace.": "[PRIOR WORK PLACE]",
-    "Please provide your job title or position in the prior workplace.": "[DESCRIPTION OF POSITION]",
-    "Please list key projects separated by commas.": "[KEY PROJECTS SEPARATED BY COMMAS]",
-    "Please describe your prior education institution and dates.": "[PRIOR EDUCATION INSTITUTION AND DATES OF ATTENDANCE]",
-    "Please describe your current education institution and dates.": "[CURRENT EDUCATION INSTITUTION AND DATES OF ATTENDANCE]",
-    "Please list your interests separated by commas.": "[INTERESTS SEPARATED BY COMMAS]",
-    "Please describe your extracurricular activities separated by commas and elaboration.": "[EXTRACURRICULAR ACTIVITIES SEPARATED BY COMMAS AND ELABORATION]",
-    "Please describe your volunteer experience separated by commas and elaboration.": "[VOLUNTEER EXPERIENCE SEPARATED BY COMMAS AND ELABORATION]",
-    "Please list your professional associations separated by commas.": "[PROFESSIONAL ASSOCIATIONS SEPARATED BY COMMAS]"
-}
+# Load questions and field mapping
+questions, field_mapping = load_questions('questions.json')
+
 
 # Initialize global variables
 current_question = 0
@@ -85,6 +109,70 @@ add_more_flag = False  # Flag to indicate if we are adding more to the response
 
 # Threading events
 stop_recording_event = threading.Event()
+pause_recording_event = threading.Event()  # --- New Feature: Pause Recording ---
+
+def load_trinidad_locations(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            # Read all lines and strip any whitespace
+            locations = [line.strip() for line in f if line.strip()]
+        return locations
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to load locations: {e}")
+        return []
+
+# Load the catalogue of Trinidad locations
+places_in_trinidad = load_trinidad_locations('trinidad_locations.txt')
+
+
+def find_location_matches(transcribed_address, catalogue, threshold=80):
+    words = transcribed_address.split()
+    matches = []
+    max_phrase_length = min(5, len(words))  # Adjust based on the maximum expected length of place names
+
+    # Generate all possible n-grams
+    for size in range(1, max_phrase_length + 1):
+        for i in range(len(words) - size + 1):
+            phrase = ' '.join(words[i:i+size])
+            match, score = process.extractOne(phrase, catalogue)
+            # Debug statement to see what's being matched
+            print(f"Trying phrase: '{phrase}' | Best match: '{match}' with score {score}")
+            if score >= threshold:
+                matches.append((match, score))
+
+    # Remove duplicates and keep the highest score for each match
+    unique_matches = {}
+    for match, score in matches:
+        if match not in unique_matches or score > unique_matches[match]:
+            unique_matches[match] = score
+
+    # Return matches sorted by score
+    sorted_matches = sorted(unique_matches.items(), key=lambda x: x[1], reverse=True)
+    return [match for match, score in sorted_matches]
+
+def handle_address_transcription(transcribed_text):
+    print(f"Transcribed Address: '{transcribed_text}'")  # Debug statement
+    matched_locations = find_location_matches(transcribed_text, places_in_trinidad)
+
+    if matched_locations:
+        # Remove matched locations from the transcribed text
+        other_parts = transcribed_text
+        for location in matched_locations:
+            other_parts = other_parts.replace(location, '')
+        # Construct the final address result
+        address_result = f"{other_parts.strip()}, {' '.join(matched_locations)}"
+    else:
+        address_result = transcribed_text
+
+    print(f"Matched Locations: {matched_locations}")  # Debug statement
+    print(f"Final Address Result: '{address_result}'")  # Debug statement
+
+    # Save the address to the responses
+    question = "Please provide your address(provide spelling if necessary)."
+    transcribed_responses[question] = address_result
+
+    # Update the transcription label
+    root.after(0, update_transcription_label, f"Transcription: {address_result}")
 
 # Function to update the status label
 def update_status(message):
@@ -144,8 +232,11 @@ def record_and_transcribe_response(record_seconds):
                     'file': (temp_filename, audio_file, 'audio/wav'),
                     'model': (None, 'whisper-1'),
                 }
+                data = {
+                    'language': selected_language_code  # Add language parameter
+                }
 
-                response = requests.post(api_url, headers=headers, files=files)
+                response = requests.post(api_url, headers=headers, files=files, data=data)
                 response.raise_for_status()
 
                 result = response.json()
@@ -176,7 +267,7 @@ def listen_and_transcribe(recognizer, microphone):
 
                 try:
                     # Recognize speech using Google's speech recognition
-                    text = recognizer.recognize_google(audio)
+                    text = recognizer.recognize_google(audio, language=selected_language_code)
                     print(f"You said: {text}")
 
                     if stop_phrase.lower() in text.lower():
@@ -198,7 +289,6 @@ def listen_and_transcribe(recognizer, microphone):
         messagebox.showerror("Error", f"Error during listening: {e}")
         return None
 
-
 # Function to update the question label in voice mode
 def update_question_voice_mode(idx):
     question = questions[idx]
@@ -219,15 +309,14 @@ def update_transcription_label(transcription_text):
     transcribed_label.configure(text=f"Transcription: {transcription_text}")
     update_resume_preview()
 
-# Function to listen for voice commands
 def listen_for_command(recognizer, microphone):
     try:
         with microphone as source:
             recognizer.adjust_for_ambient_noise(source)
             print("Listening for command...")
             audio = recognizer.listen(source, timeout=5, phrase_time_limit=5)
-        # Recognize speech using Google's speech recognition``
-        command = recognizer.recognize_google(audio)
+        # Recognize speech using Google's speech recognition
+        command = recognizer.recognize_google(audio, language=selected_language_code)
         print(f"Command recognized: {command}")
         return command.lower()
     except sr.UnknownValueError:
@@ -242,8 +331,6 @@ def listen_for_command(recognizer, microphone):
         messagebox.showerror("Error", f"Could not request results from Google Speech Recognition service; {e}")
         return None
 
-    
-# Function to listen and transcribe with VAD
 def listen_and_transcribe_with_stop_phrase(recognizer, microphone):
     audio_data = io.BytesIO()
     stop_phrase_detected = False
@@ -265,7 +352,7 @@ def listen_and_transcribe_with_stop_phrase(recognizer, microphone):
                 temp_recognizer = sr.Recognizer()
                 temp_audio = sr.AudioData(audio.get_raw_data(), audio.sample_rate, audio.sample_width)
                 try:
-                    temp_text = temp_recognizer.recognize_google(temp_audio)
+                    temp_text = temp_recognizer.recognize_google(temp_audio, language=selected_language_code)
                     print(f"You said: {temp_text}")
                     if "stop recording" in temp_text.lower():
                         stop_phrase_detected = True
@@ -287,7 +374,7 @@ def listen_and_transcribe_with_stop_phrase(recognizer, microphone):
     # Transcribe the full audio
     root.after(0, update_status, "Transcribing response...")
     try:
-        transcription_text = recognizer.recognize_google(full_audio)
+        transcription_text = recognizer.recognize_google(full_audio, language=selected_language_code)
         root.after(0, update_transcription_label, transcription_text)
         return transcription_text.strip()
     except sr.UnknownValueError:
@@ -296,12 +383,12 @@ def listen_and_transcribe_with_stop_phrase(recognizer, microphone):
         messagebox.showerror("Error", f"Could not request results from Google Speech Recognition service; {e}")
         return None
 
-
 # Function to perform the voice-assisted walkthrough
 def voice_walkthrough():
     global transcribed_responses, engine
     engine = pyttsx3.init()
-    engine.setProperty('rate', 200)  # Adjust speech rate if necessary
+    engine.setProperty('rate', tts_settings['rate'])  # Use rate from settings
+    engine.setProperty('voice', tts_settings['voice'].id)  # Use selected voice from settings
 
     # Provide initial instructions once
     initial_instructions = (
@@ -330,20 +417,30 @@ def voice_walkthrough():
             engine.runAndWait()
 
             # Record and transcribe the user's response
-            transcription_text = listen_and_transcribe_with_whisper()
+            transcription_text = listen_and_transcribe_with_stop_phrase(sr.Recognizer(), sr.Microphone())
 
             if transcription_text is None or transcription_text.strip() == "":
                 engine.say("I didn't catch that. Let's try again.")
                 engine.runAndWait()
                 continue  # Restart the question
 
-            # Read back the response
-            engine.say("You said:")
-            engine.say(transcription_text)
-            engine.runAndWait()
-
-            # Update the transcription label
-            root.after(0, update_transcription_label, transcription_text)
+            # Special handling for the address question
+            if question == "Please provide your address(provide spelling if necessary).":
+                handle_address_transcription(transcription_text)
+                address_result = transcribed_responses[question]
+                # Read back the address result
+                engine.say("You said:")
+                engine.say(address_result)
+                engine.runAndWait()
+            else:
+                # Standard processing for other questions
+                transcribed_responses[question] = transcription_text
+                # Update the transcription label
+                root.after(0, update_transcription_label, transcription_text)
+                # Read back the response
+                engine.say("You said:")
+                engine.say(transcription_text)
+                engine.runAndWait()
 
             # Confirmation loop
             confirmation_received = False
@@ -357,8 +454,9 @@ def voice_walkthrough():
                 microphone = sr.Microphone()
                 confirmation = listen_for_command(recognizer, microphone)
                 if confirmation is not None and 'yes' in confirmation.lower():
-                    # Save the response
-                    transcribed_responses[question] = transcription_text
+                    # Save the response (already saved for the address question)
+                    if question != "Please provide your address(provide spelling if necessary).":
+                        transcribed_responses[question] = transcription_text
                     response_recorded = True  # Move to the next question
                     confirmation_received = True  # Exit confirmation loop
                     # Update the resume preview
@@ -381,13 +479,7 @@ def voice_walkthrough():
     engine.say("Voice walkthrough completed. Your formatted resume has been generated and saved.")
     engine.runAndWait()
 
-
-    
-    
 # Function to record and transcribe using OpenAI Whisper API
-import webrtcvad
-import collections
-
 def listen_and_transcribe_with_whisper():
     CHUNK_DURATION_MS = 30  # Duration of a chunk in milliseconds
     SAMPLE_RATE = 16000  # Sample rate in Hz
@@ -455,10 +547,11 @@ def listen_and_transcribe_with_whisper():
 
             with open(temp_filename, 'rb') as audio_file:
                 files = {
-                    'file': audio_file
+                    'file': (temp_filename, audio_file, 'audio/wav'),
+                    'model': (None, 'whisper-1'),
                 }
                 data = {
-                    'model': 'whisper-1'
+                    'language': selected_language_code  # Add language parameter
                 }
 
                 response = requests.post(api_url, headers=headers, files=files, data=data)
@@ -475,7 +568,6 @@ def listen_and_transcribe_with_whisper():
             os.unlink(temp_filename)  # Remove the temp file
 
     return transcription_text
-
 
 # Function to handle recording and transcribing
 def recording_thread_function():
@@ -505,6 +597,10 @@ def recording_thread_function():
     root.after(0, update_status, "Recording...")
 
     while not stop_recording_event.is_set():
+        if pause_recording_event.is_set():
+            # If paused, wait until the pause is lifted
+            time.sleep(0.1)
+            continue
         try:
             data = stream.read(CHUNK)
             frames.append(data)
@@ -542,8 +638,11 @@ def recording_thread_function():
                 'file': (temp_filename, audio_file, 'audio/wav'),
                 'model': (None, 'whisper-1'),
             }
+            data = {
+                'language': selected_language_code  # Add language parameter
+            }
 
-            response = requests.post(api_url, headers=headers, files=files)
+            response = requests.post(api_url, headers=headers, files=files, data=data)
             response.raise_for_status()
 
             result = response.json()
@@ -581,52 +680,70 @@ def recording_thread_function():
 def start_recording_thread(add_more=False):
     global add_more_flag
     stop_recording_event.clear()
+    pause_recording_event.clear()  # Clear pause at start
     add_more_flag = add_more
     # Hide decision frame first
     hide_decision_frame()
     # Disable buttons during recording
     disable_buttons_for_recording()
+    # Enable the Pause button with initial text and color
+    pause_button.configure(state="normal", text="Pause Recording", fg_color="green")  # Set to green indicating active recording
     # Update labels to indicate recording
     transcribed_label.configure(text="Transcription: Recording...")
+    update_status("Recording...")
     # Start recording thread
     recording_thread = threading.Thread(target=recording_thread_function)
     recording_thread.start()
 
+
 # Function to stop recording
 def stop_recording():
     stop_recording_event.set()
+    # Reset the pause event in case recording was paused
+    pause_recording_event.clear()
     # Update label to indicate processing
     transcribed_label.configure(text="Transcription: Processing...")
     update_status("Processing transcription...")
-    # Disable the stop button to prevent multiple presses
+    # Disable the stop and pause buttons to prevent multiple presses
     stop_button.configure(state="disabled")
+    pause_button.configure(state="disabled", text="Pause Recording", fg_color="green")  # Reset to initial state
+
+
+# Function to toggle pause/resume recording
+def toggle_pause_recording():
+    if not pause_recording_event.is_set():
+        # Pause the recording
+        pause_recording_event.set()
+        pause_button.configure(text="Resume Recording", fg_color="red")  # Change text and color to red
+        update_status("Recording Paused.")
+    else:
+        # Resume the recording
+        pause_recording_event.clear()
+        pause_button.configure(text="Pause Recording", fg_color="green")  # Revert text and color to green
+        update_status("Recording Resumed.")
+
 
 # Function to disable buttons during recording
 def disable_buttons_for_recording():
     start_button.configure(state="disabled")
     stop_button.configure(state="normal")
+    pause_button.configure(state="normal")  # Enable Pause Button
     next_button.configure(state="disabled")
     prev_button.configure(state="disabled")
     save_button.configure(state="disabled")
     skip_button.configure(state="disabled")
     add_more_main_button.configure(state="disabled")  # Disable 'Add More' button
 
-
 # Function to re-enable buttons after recording
 def enable_buttons_after_recording():
     start_button.configure(state="normal")
     stop_button.configure(state="disabled")
+    pause_button.configure(state="disabled", text="Pause Recording", fg_color="green")  # Reset to initial state
     next_button.configure(state="normal")
     prev_button.configure(state="normal")
     save_button.configure(state="normal")
     skip_button.configure(state="normal")
     update_add_more_button_state()  # Update 'Add More' button state
-
-
-# Function to update the transcription label
-def update_transcription_label(transcription_text):
-    transcribed_label.configure(text=f"Transcription: {transcription_text}")
-    update_resume_preview()
 
 
 # Function to navigate to the next question
@@ -664,7 +781,7 @@ def update_question():
     # Update progress bar
     progress = (current_question + 1) / len(questions)
     progress_bar.set(progress)
-    
+
 
 # Function to generate resume text from responses
 def generate_resume_text():
@@ -806,7 +923,6 @@ def generate_resume_text():
 
     return resume_text.strip()
 
-
 # Function to update the resume preview textbox
 def update_resume_preview():
     resume_text = generate_resume_text()
@@ -817,13 +933,17 @@ def update_resume_preview():
     # Save responses to file
     save_responses_to_file()
 
-# Function to save the responses to a text file
+
+# Function to save the responses to a text file without replacing field names
 def save_responses_to_file():
     try:
         with open('responses.txt', 'w', encoding='utf-8') as f:
             for question in questions:
+                # Get the corresponding field name (e.g., [NAME], [CONTACT NUMBER])
                 field_name = field_mapping.get(question, question)
                 response = transcribed_responses.get(question, "")
+                
+                # Write the field name as it is, and append the response after the dash
                 f.write(f"{field_name} - {response}\n")
     except Exception as e:
         messagebox.showerror("Error", f"Failed to save responses: {e}")
@@ -853,68 +973,33 @@ def save_resume():
 
 # Function to generate formatted resume via ChatGPT
 def generate_formatted_resume():
+    """
+    Generates a formatted resume by loading the resume prompt template,
+    inserting the user responses into the Input section, and sending it to ChatGPT.
+    """
     try:
-        # Build the Input section from transcribed responses
+        # Load the resume prompt template
+        with open('resume_prompt.txt', 'r', encoding='utf-8') as f:
+            resume_template = f.read()
+
+        # Construct the input_section with [FIELD] - value pairs
         input_section = ""
         for question in questions:
-            field_name = field_mapping.get(question, question)
-            response = transcribed_responses.get(question, "")
-            input_section += f"{field_name} - {response}\n"
+            field = field_mapping.get(question, question)  # Get the field name
+            response = transcribed_responses.get(question, "").strip()
+            if response:  # Only include fields that have responses
+                input_section += f"{field} - {response}\n"
 
-        # Your initial prompt
-        full_prompt = f"""[Resume Generation Prompt
+        # Replace the {input_section} placeholder in the template
+        filled_resume_template = resume_template.replace("{input_section}", input_section.strip())
 
-Input:
+        # Debug: Print the filled resume template
+        print("=== Filled Resume Template ===")
+        print(filled_resume_template)
+        print("=== End of Template ===")
 
-{input_section}
-
-Instructions:
-
-Use the provided details to generate a resume in the following format. Ensure clarity and specificity in each section based on the details given. Reword and refine the content to maintain a professional tone and proper grammar.
-
-Output Format:
-
-[NAME]
-[CONTACT NUMBER]
-[EMAIL ADDRESS]
-[ADDRESS]
-
-Professional Summary
-Create a 4-line professional summary using the words from [PERSONAL DESCRIPTIONS SEPARATED BY COMMAS]. The summary should highlight key strengths, qualities, and professional attributes, including career goals and how past experiences align with industry trends.
-
-Skills
-List the skills mentioned in [SKILLS SEPARATED BY COMMAS] in bullet points or a similar format. Include subcategories if applicable.
-
-Certifications and Training
-List relevant certifications, courses, and workshops mentioned in [CERTIFICATIONS AND TRAINING SEPARATED BY COMMAS].
-
-Professional Achievements
-Highlight specific accomplishments or awards mentioned in [PROFESSIONAL ACHIEVEMENTS SEPARATED BY COMMAS].
-
-Work Experience
-Mention the name of the institution from [PRIOR WORK PLACE]. Elaborate on the position described in [DESCRIPTION OF POSITION], including key responsibilities and achievements. Include details of key projects from [KEY PROJECTS SEPARATED BY COMMAS].
-
-Education
-
-[PRIOR EDUCATION INSTITUTION AND DATES OF ATTENDANCE]
-[CURRENT EDUCATION INSTITUTION AND DATES OF ATTENDANCE]
-
-Interests
-List the interests mentioned in [INTERESTS SEPARATED BY COMMAS] in bullet points or a similar format.
-
-Extracurricular Activities
-List and elaborate on the extracurricular activities mentioned in [EXTRACURRICULAR ACTIVITIES SEPARATED BY COMMAS AND ELABORATION]. Provide details on roles, contributions, and any relevant outcomes.
-
-Volunteer Experience
-Include volunteer work mentioned in [VOLUNTEER EXPERIENCE SEPARATED BY COMMAS AND ELABORATION], detailing roles, contributions, and impact.
-
-Professional Associations
-Mention memberships in professional organizations or networks relevant to your field from [PROFESSIONAL ASSOCIATIONS SEPARATED BY COMMAS].
-
-References
-Available upon request.
-
-Note: The input provided above should be used to generate the resume in the specified format.]"""
+        # Prepare the full prompt for OpenAI
+        full_prompt = filled_resume_template
 
         # Send the prompt to the OpenAI API
         api_url = 'https://api.openai.com/v1/chat/completions'
@@ -925,11 +1010,11 @@ Note: The input provided above should be used to generate the resume in the spec
         }
 
         data = {
-            "model": "gpt-3.5-turbo",
+            "model": "gpt-3.5-turbo",  # You can use a different model if preferred
             "messages": [
                 {"role": "user", "content": full_prompt}
             ],
-            "max_tokens": 2000,
+            "max_tokens": 2000,  # Adjust as needed
             "n": 1,
             "temperature": 0.7
         }
@@ -939,11 +1024,26 @@ Note: The input provided above should be used to generate the resume in the spec
 
         result = response.json()
         formatted_resume = result['choices'][0]['message']['content'].strip()
+        
+        # Debug: Print the formatted resume received from OpenAI
+        print("=== Formatted Resume ===")
+        print(formatted_resume)
+        print("=== End of Formatted Resume ===")
+        
         return formatted_resume
 
+    except FileNotFoundError:
+        messagebox.showerror("Error", "The resume prompt file 'resume_prompt.txt' was not found.")
+        return None
+    except requests.exceptions.HTTPError as e:
+        error_message = response.json().get('error', {}).get('message', str(e))
+        messagebox.showerror("Error", f"OpenAI API request failed: {error_message}")
+        return None
     except Exception as e:
         messagebox.showerror("Error", f"Failed to generate formatted resume: {e}")
         return None
+
+
 
 # Function to generate and save the formatted resume via ChatGPT
 def generate_and_save_formatted_resume():
@@ -979,12 +1079,12 @@ def show_decision_frame():
     # Disable main buttons
     start_button.configure(state="disabled")
     stop_button.configure(state="disabled")
+    pause_button.configure(state="disabled")  # --- New Feature: Disable Pause Button ---
     next_button.configure(state="disabled")
     prev_button.configure(state="disabled")
     save_button.configure(state="disabled")
     skip_button.configure(state="disabled")
     add_more_main_button.configure(state="disabled")  # Disable 'Add More' button
-
 
 # Function to hide decision frame
 def hide_decision_frame():
@@ -992,12 +1092,12 @@ def hide_decision_frame():
     # Enable main buttons
     start_button.configure(state="normal")
     stop_button.configure(state="disabled")
+    pause_button.configure(state="disabled", text="Pause Recording")  # --- New Feature: Disable Pause Button ---
     next_button.configure(state="normal")
     prev_button.configure(state="normal")
     save_button.configure(state="normal")
     skip_button.configure(state="normal")
     update_add_more_button_state()  # Update 'Add More' button state
-
 
 # Function when user accepts the response
 def accept_response():
@@ -1014,11 +1114,127 @@ def redo_response():
     update_add_more_button_state()
     start_recording_thread(add_more=False)
 
-
 # Function when user wants to add more to the response
 def add_more_response():
     hide_decision_frame()
     start_recording_thread(add_more=True)
+
+# ========================== Settings Implementation ==========================
+
+# Global dictionary to store TTS settings and language selection
+tts_settings = {
+    'rate': 200,  # Default speech rate
+    'voice': None,  # To be set after initializing engine
+    'language': 'English'  # Default language
+}
+
+# Mapping of languages to their codes
+language_mapping = {
+    'English': 'en',
+    'Spanish': 'es',
+    'French': 'fr'
+}
+
+selected_language = tts_settings['language']
+selected_language_code = language_mapping[selected_language]
+
+# Initialize the pyttsx3 engine globally
+engine = pyttsx3.init()
+# Set default properties
+engine.setProperty('rate', tts_settings['rate'])
+
+# Get available voices and set default
+voices = engine.getProperty('voices')
+if voices:
+    # Default to first voice that matches the selected language, else first voice
+    selected_voice = next((voice for voice in voices if selected_language_code in voice.languages or selected_language_code in voice.id.lower()), voices[0])
+    tts_settings['voice'] = selected_voice
+    engine.setProperty('voice', selected_voice.id)
+else:
+    messagebox.showerror("Error", "No voices available for the text-to-speech engine.")
+
+# Function to open the Settings window
+def open_settings():
+    settings_window = ctk.CTkToplevel(root)
+    settings_window.title("Settings")
+    settings_window.geometry("400x400")
+    settings_window.resizable(False, False)
+
+    # Label for Speech Rate
+    rate_label = ctk.CTkLabel(settings_window, text="Speech Rate:", font=("Helvetica", 14))
+    rate_label.pack(pady=(20, 5))
+
+    # Slider for Speech Rate
+    rate_slider = ctk.CTkSlider(settings_window, from_=100, to=300, number_of_steps=200, command=lambda val: update_rate(val))
+    rate_slider.set(tts_settings['rate'])
+    rate_slider.pack(pady=5, padx=20, fill="x")
+
+    # Display current rate value
+    rate_value_label = ctk.CTkLabel(settings_window, text=f"{tts_settings['rate']} words per minute", font=("Helvetica", 12))
+    rate_value_label.pack(pady=5)
+
+    # Update label when slider moves
+    def on_rate_change(val):
+        rate = int(float(val))
+        rate_value_label.configure(text=f"{rate} words per minute")
+
+    rate_slider.configure(command=lambda val: [update_rate(val), on_rate_change(val)])
+
+    # Label for Voice Selection
+    voice_label = ctk.CTkLabel(settings_window, text="Select Voice:", font=("Helvetica", 14))
+    voice_label.pack(pady=(20, 5))
+
+    # Dropdown for Voice Selection
+    voice_options = [voice.name for voice in voices]
+    selected_voice_name = ctk.StringVar(value=tts_settings['voice'].name if tts_settings['voice'] else "")
+
+    voice_dropdown = ctk.CTkOptionMenu(settings_window, values=voice_options, variable=selected_voice_name, command=lambda val: update_voice(val))
+    voice_dropdown.pack(pady=5, padx=20, fill="x")
+
+    # Label for Language Selection
+    language_label = ctk.CTkLabel(settings_window, text="Select Language:", font=("Helvetica", 14))
+    language_label.pack(pady=(20, 5))
+
+    # Dropdown for Language Selection
+    language_options = list(language_mapping.keys())
+    selected_language_var = ctk.StringVar(value=tts_settings['language'])
+
+    language_dropdown = ctk.CTkOptionMenu(settings_window, values=language_options, variable=selected_language_var, command=lambda val: update_language(val))
+    language_dropdown.pack(pady=5, padx=20, fill="x")
+
+    # Close Button
+    close_button = ctk.CTkButton(settings_window, text="Close", command=settings_window.destroy)
+    close_button.pack(pady=20)
+
+# Function to update speech rate
+def update_rate(val):
+    rate = int(float(val))
+    tts_settings['rate'] = rate
+    engine.setProperty('rate', rate)
+
+# Function to update voice
+def update_voice(voice_name):
+    selected = next((voice for voice in voices if voice.name == voice_name), None)
+    if selected:
+        tts_settings['voice'] = selected
+        engine.setProperty('voice', selected.id)
+    else:
+        messagebox.showerror("Error", "Selected voice not found.")
+
+# Function to update language
+def update_language(language):
+    global selected_language, selected_language_code
+    if language in language_mapping:
+        selected_language = language
+        selected_language_code = language_mapping[language]
+        tts_settings['language'] = language
+        # Optionally, you can also set the voice to match the language
+        # This requires that voices are tagged with their languages
+        # For simplicity, we're not changing the voice based on language
+    else:
+        messagebox.showerror("Error", "Selected language not supported.")
+
+# ========================== End of Settings Implementation ==========================
 
 # GUI Setup using customtkinter
 ctk.set_appearance_mode("System")  # Options: "System" (default), "Dark", "Light"
@@ -1028,6 +1244,195 @@ root = ctk.CTk()
 root.title("Resume Generator")
 root.geometry("1400x800")
 root.resizable(True, True)  # Make the window resizable
+
+# ========================== Menu Bar Implementation ==========================
+
+# Help Button
+def create_menu_bar():
+    menu_bar = ctk.CTkFrame(root, corner_radius=0)
+    menu_bar.pack(side="top", fill="x")
+
+    # Settings Button
+    settings_button = ctk.CTkButton(
+        menu_bar,
+        text="Settings",
+        command=open_settings,
+        width=100,
+        height=30,
+        fg_color="transparent",
+        hover_color="gray70",
+        text_color="white",
+        font=("Helvetica", 12)
+    )
+    settings_button.pack(side="left", padx=10, pady=5)
+
+    # Help Button
+    def show_help():
+        # Create a new top-level window for the Help Menu
+        help_window = ctk.CTkToplevel(root)
+        help_window.title("Help")
+        help_window.geometry("800x600")
+        help_window.resizable(False, False)  # Fixed size for consistency
+
+        # Create a frame to hold all help content with padding
+        help_frame = ctk.CTkFrame(help_window, corner_radius=10)
+        help_frame.pack(pady=20, padx=20, fill="both", expand=True)
+
+        # Add a title label
+        title_label = ctk.CTkLabel(
+            help_frame,
+            text="Resume Generator Help",
+            font=("Helvetica", 20, "bold"),
+            anchor="w"
+        )
+        title_label.pack(pady=(0, 10), anchor="w")
+
+        # Create a scrollable frame in case content overflows
+        scroll_frame = ctk.CTkScrollableFrame(help_frame, width=760, height=500)
+        scroll_frame.pack(pady=10, padx=5, fill="both", expand=True)
+
+        # Helper function to add section titles
+        def add_section_title(text):
+            section_label = ctk.CTkLabel(
+                scroll_frame,
+                text=text,
+                font=("Helvetica", 16, "bold"),
+                anchor="w"
+            )
+            section_label.pack(pady=(10, 5), anchor="w")
+
+        # Helper function to add bullet points
+        def add_bullet_point(text):
+            bullet_label = ctk.CTkLabel(
+                scroll_frame,
+                text=f"• {text}",
+                font=("Helvetica", 12),
+                anchor="w"
+            )
+            bullet_label.pack(pady=2, anchor="w")
+
+        # Helper function to add numbered lists
+        def add_numbered_list(text, number):
+            numbered_label = ctk.CTkLabel(
+                scroll_frame,
+                text=f"{number}. {text}",
+                font=("Helvetica", 12),
+                anchor="w"
+            )
+            numbered_label.pack(pady=2, anchor="w")
+
+        # -------------------- Help Content Sections --------------------
+
+        # How to Use Section
+        add_section_title("How to Use")
+        add_numbered_list("Manual Walkthrough: Enter your details manually.", 1)
+        add_numbered_list("Voice Walkthrough: Answer questions verbally using your microphone.", 2)
+
+        # Keyboard Shortcuts Section
+        add_section_title("Keyboard Shortcuts")
+        add_bullet_point("Ctrl+R: Start/Stop voice recording")
+        add_bullet_point("Ctrl+N: Next question")
+        add_bullet_point("Ctrl+P: Previous question")
+        add_bullet_point("Ctrl+S: Save your resume")
+        add_bullet_point("Ctrl+A: Add more details")
+        add_bullet_point("Ctrl+Q: Quit the app")
+
+        # Settings Section
+        add_section_title("Settings")
+        add_bullet_point("Adjust speech speed and choose a Text-to-Speech (TTS) voice.")
+        add_bullet_point("Select a transcription language for better accuracy.")
+
+        # Microphone Setup Section
+        add_section_title("Microphone Setup")
+        add_bullet_point("Ensure your microphone is properly connected for the voice mode to function correctly.")
+
+        # Recording Guidelines Section
+        add_section_title("Recording Guidelines")
+        add_bullet_point("Maximum File Size: 25 MB per recording.")
+        add_bullet_point("Estimated Duration: Approximately 30 seconds per 1 MB, allowing up to 12.5 minutes per recording.")
+        add_bullet_point("Monitoring Size: The application displays the recording size in MB before sending it for transcription.")
+
+        # Recording Tips Section
+        add_section_title("Recording Tips")
+        add_bullet_point("Speak Clearly: Enunciate your words for better transcription accuracy.")
+        add_bullet_point("Minimize Background Noise: Reduce ambient sounds to avoid interference.")
+        add_bullet_point("Stay Within Limits: Keep recordings under the 12-minute threshold to prevent errors.")
+
+        # Contact Information Section
+        add_section_title("Need Help?")
+        contact_label = ctk.CTkLabel(
+            scroll_frame,
+            text="For assistance or questions, please contact our support team at support@example.com.",
+            font=("Helvetica", 12),
+            anchor="w",
+            wraplength=700
+        )
+        contact_label.pack(pady=(2, 10), anchor="w")
+
+        # Optional: Add a close button at the bottom
+        close_button = ctk.CTkButton(
+            help_frame,
+            text="Close",
+            command=help_window.destroy,
+            width=100,
+            height=40,
+            fg_color="blue",
+            text_color="white",
+            font=("Helvetica", 12)
+        )
+        close_button.pack(pady=10)
+
+    help_button = ctk.CTkButton(
+        menu_bar,
+        text="Help",
+        command=show_help,
+        width=100,
+        height=30,
+        fg_color="transparent",
+        hover_color="gray70",
+        text_color="white",
+        font=("Helvetica", 12)
+    )
+    help_button.pack(side="left", padx=10, pady=5)
+
+    # ========================== Keyboard Shortcuts Implementation ==========================
+
+    def on_shortcut(event):
+        # Mapping keyboard shortcuts to functions
+        # Ctrl+R: Start/Stop Recording
+        # Ctrl+N: Next Question
+        # Ctrl+P: Previous Question
+        # Ctrl+S: Save Resume
+        # Ctrl+A: Add More
+        # Ctrl+Q: Quit Application
+        if event.state & 0x0004:  # Ctrl key
+            if event.keysym.lower() == 'r':
+                # Toggle Recording
+                if stop_button.cget('state') == 'normal':
+                    stop_recording()
+                else:
+                    start_recording_thread(add_more=False)
+            elif event.keysym.lower() == 'n':
+                next_question_func()
+            elif event.keysym.lower() == 'p':
+                prev_question_func()
+            elif event.keysym.lower() == 's':
+                save_resume()
+            elif event.keysym.lower() == 'a':
+                add_more_response()
+            elif event.keysym.lower() == 'q':
+                root.quit()
+
+    root.bind_all("<Control-r>", on_shortcut)  # Ctrl+R
+    root.bind_all("<Control-n>", on_shortcut)  # Ctrl+N
+    root.bind_all("<Control-p>", on_shortcut)  # Ctrl+P
+    root.bind_all("<Control-s>", on_shortcut)  # Ctrl+S
+    root.bind_all("<Control-a>", on_shortcut)  # Ctrl+A
+    root.bind_all("<Control-q>", on_shortcut)  # Ctrl+Q
+
+    # ========================== End of Keyboard Shortcuts Implementation ==========================
+
+create_menu_bar()
 
 # Load icons (Ensure the icons are in the same directory or provide the correct path)
 try:
@@ -1042,6 +1447,7 @@ try:
     accept_icon = ctk.CTkImage(Image.open("icons/accept_icon.png"), size=(20, 20))
     redo_icon = ctk.CTkImage(Image.open("icons/redo_icon.png"), size=(20, 20))
     add_more_icon = ctk.CTkImage(Image.open("icons/add_more_icon.png"), size=(20, 20))
+    pause_icon = ctk.CTkImage(Image.open("icons/pause_icon.png"), size=(20, 20))
 except Exception as e:
     print(f"Icon loading failed: {e}")
     manual_icon = None
@@ -1055,6 +1461,7 @@ except Exception as e:
     accept_icon = None
     redo_icon = None
     add_more_icon = None
+    pause_icon = None
 
 # Progress Bar
 progress_bar = ctk.CTkProgressBar(root, width=400, height=20)
@@ -1170,7 +1577,6 @@ def initialize_voice_gui():
     resume_preview_textbox.pack(pady=5, padx=20)
     resume_preview_textbox.configure(state="disabled")  # Make it read-only
 
-
 def update_add_more_button_state():
     question = questions[current_question]
     if question in transcribed_responses and transcribed_responses[question].strip():
@@ -1180,11 +1586,10 @@ def update_add_more_button_state():
         # No response yet, disable 'Add More' button
         add_more_main_button.configure(state="disabled")
 
-
 # Function to initialize the manual input GUI with voice recording
 def initialize_manual_gui():
     global question_label, transcribed_label
-    global start_button, stop_button, next_button, prev_button, save_button, skip_button, generate_button
+    global start_button, stop_button, pause_button, next_button, prev_button, save_button, skip_button, generate_button
     global status_label, resume_preview_textbox, decision_frame
     global add_more_main_button  # Add this line
 
@@ -1218,6 +1623,20 @@ def initialize_manual_gui():
     )
     start_button.grid(row=0, column=0, padx=10, pady=10)
 
+    # Pause Recording Button --- New Feature: Pause Recording ---
+    pause_button = ctk.CTkButton(
+        button_frame,
+        text="Pause Recording",
+        image=None,  # Optionally, add an icon for pause
+        compound="left",
+        command=lambda: toggle_pause_recording(),
+        width=150,
+        height=40,
+        font=("Helvetica", 12),
+        state="disabled"  # Initially disabled
+    )
+    pause_button.grid(row=0, column=1, padx=10, pady=10)
+
     # Stop Recording Button
     stop_button = ctk.CTkButton(
         button_frame,
@@ -1227,10 +1646,10 @@ def initialize_manual_gui():
         command=stop_recording,
         width=150,
         height=40,
-        font=("Helvetica", 12)
+        font=("Helvetica", 12),
+        state="disabled"  # Initially disabled
     )
-    stop_button.grid(row=0, column=1, padx=10, pady=10)
-    stop_button.configure(state="disabled")  # Initially disabled
+    stop_button.grid(row=0, column=2, padx=10, pady=10)
 
     # Add More Button
     add_more_main_button = ctk.CTkButton(
@@ -1243,7 +1662,7 @@ def initialize_manual_gui():
         height=40,
         font=("Helvetica", 12)
     )
-    add_more_main_button.grid(row=0, column=2, padx=10, pady=10)
+    add_more_main_button.grid(row=0, column=3, padx=10, pady=10)
 
     # Skip Button
     skip_button = ctk.CTkButton(
@@ -1256,7 +1675,7 @@ def initialize_manual_gui():
         height=40,
         font=("Helvetica", 12)
     )
-    skip_button.grid(row=0, column=3, padx=10, pady=10)
+    skip_button.grid(row=0, column=4, padx=10, pady=10)
 
     # Previous Button
     prev_button = ctk.CTkButton(
@@ -1269,7 +1688,7 @@ def initialize_manual_gui():
         height=40,
         font=("Helvetica", 12)
     )
-    prev_button.grid(row=0, column=4, padx=10, pady=10)
+    prev_button.grid(row=0, column=5, padx=10, pady=10)
 
     # Next Button
     next_button = ctk.CTkButton(
@@ -1282,7 +1701,7 @@ def initialize_manual_gui():
         height=40,
         font=("Helvetica", 12)
     )
-    next_button.grid(row=0, column=5, padx=10, pady=10)
+    next_button.grid(row=0, column=6, padx=10, pady=10)
 
     # Save Resume Button
     save_button = ctk.CTkButton(
@@ -1295,7 +1714,7 @@ def initialize_manual_gui():
         height=40,
         font=("Helvetica", 12)
     )
-    save_button.grid(row=0, column=6, padx=10, pady=10)
+    save_button.grid(row=0, column=7, padx=10, pady=10)
 
     # Generate Formatted Resume Button
     generate_button = ctk.CTkButton(
@@ -1308,7 +1727,7 @@ def initialize_manual_gui():
         height=40,
         font=("Helvetica", 12)
     )
-    generate_button.grid(row=0, column=7, padx=10, pady=10)
+    generate_button.grid(row=0, column=8, padx=10, pady=10)
 
     # Status Label
     status_label = ctk.CTkLabel(
@@ -1366,6 +1785,21 @@ def initialize_manual_gui():
         font=("Helvetica", 12)
     )
     add_more_button.pack(side="left", padx=10, pady=10)
+    
+    # Pause Recording Button --- Updated to use single icon and color changes ---
+    pause_button = ctk.CTkButton(
+        button_frame,
+        text="Pause Recording",
+        image=pause_icon,  # Assign the single pause icon
+        compound="left",
+        command=lambda: toggle_pause_recording(),
+        width=150,
+        height=40,
+        font=("Helvetica", 12),
+        state="disabled",  # Initially disabled
+        fg_color="green"  # Green indicates active recording
+    )
+    pause_button.grid(row=0, column=1, padx=10, pady=10)
 
     # Resume Preview Textbox
     resume_preview_label = ctk.CTkLabel(

@@ -1,0 +1,53 @@
+[Resume Generation Prompt
+
+Input:
+
+{input_section}
+
+Instructions:
+
+Use the provided details to generate a resume in the following format. Ensure clarity and specificity in each section based on the details given. Reword and refine the content to maintain a professional tone and proper grammar.
+
+Output Format:
+
+[NAME]
+[CONTACT NUMBER]
+[EMAIL ADDRESS]
+[ADDRESS]
+
+Professional Summary
+Create a 50-word professional summary using the words from [PERSONAL DESCRIPTIONS SEPARATED BY COMMAS]. The summary should highlight key strengths, qualities, and professional attributes, including career goals and how past experiences align with industry trends.
+
+Skills
+List the skills mentioned in [SKILLS SEPARATED BY COMMAS] in bullet points or a similar format. Include subcategories if applicable.
+
+Certifications and Training
+List relevant certifications, courses, and workshops mentioned in [CERTIFICATIONS AND TRAINING SEPARATED BY COMMAS].
+
+Professional Achievements
+Highlight specific accomplishments or awards mentioned in [PROFESSIONAL ACHIEVEMENTS SEPARATED BY COMMAS].
+
+Work Experience
+Mention the name of the institution from [PRIOR WORK PLACE]. Elaborate on the position described in [DESCRIPTION OF POSITION], including key responsibilities and achievements. Include details of key projects from [KEY PROJECTS SEPARATED BY COMMAS].
+
+Education
+
+[PRIOR EDUCATION INSTITUTION AND DATES OF ATTENDANCE]
+[CURRENT EDUCATION INSTITUTION AND DATES OF ATTENDANCE]
+
+Interests
+List the interests mentioned in [INTERESTS SEPARATED BY COMMAS] in bullet points or a similar format.
+
+Extracurricular Activities
+List and elaborate on the extracurricular activities mentioned in [EXTRACURRICULAR ACTIVITIES SEPARATED BY COMMAS AND ELABORATION]. Provide details on roles, contributions, and any relevant outcomes.
+
+Volunteer Experience
+Include volunteer work mentioned in [VOLUNTEER EXPERIENCE SEPARATED BY COMMAS AND ELABORATION], detailing roles, contributions, and impact.
+
+Professional Associations
+Mention memberships in professional organizations or networks relevant to your field from [PROFESSIONAL ASSOCIATIONS SEPARATED BY COMMAS].
+
+References
+Available upon request.
+
+Note: The input provided above should be used to generate the resume in the specified format.]
