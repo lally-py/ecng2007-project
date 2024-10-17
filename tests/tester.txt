@@ -1,8 +1,25 @@
-[Resume Generation Prompt
+Resume Generation Prompt
 
 Input:
 
-{input_section}
+[NAME] - John Doe
+[CONTACT NUMBER] - (123) 456-7890
+[EMAIL ADDRESS] - johndoe@email.com
+[ADDRESS] - 123 Main Street, Springfield, USA
+[PERSONAL DESCRIPTIONS SEPARATED BY COMMAS] - hardworking, team player, quick learner, detail-oriented, adaptable
+[SKILLS SEPARATED BY COMMAS] - project management, data analysis, programming in Python, web development, graphic design
+[CERTIFICATIONS AND TRAINING SEPARATED BY COMMAS] - PMP Certification, Python for Data Science, Google Analytics Certified, ITIL Foundation
+[PROFESSIONAL ACHIEVEMENTS SEPARATED BY COMMAS] - increased revenue by 25%, developed key automation system, led a successful product launch
+[PRIOR WORK PLACE] - ABC Corporation
+[DESCRIPTION OF POSITION] - Project Manager overseeing product development and client delivery
+[KEY PROJECTS SEPARATED BY COMMAS] - website redesign project, automation tool development, eCommerce platform launch
+[PRIOR EDUCATION INSTITUTION AND DATES OF ATTENDANCE] - University of Springfield, 2015-2019
+[CURRENT EDUCATION INSTITUTION AND DATES OF ATTENDANCE] - Springfield Institute of Technology, 2020-present
+[INTERESTS SEPARATED BY COMMAS] - hiking, reading, technology, gaming, photography
+[EXTRACURRICULAR ACTIVITIES SEPARATED BY COMMAS AND ELABORATION] - member of the coding club, organized tech workshops for students
+[VOLUNTEER EXPERIENCE SEPARATED BY COMMAS AND ELABORATION] - Habitat for Humanity volunteer, organized community clean-up events
+[PROFESSIONAL ASSOCIATIONS SEPARATED BY COMMAS] - Project Management Institute, Association for Computing Machinery
+
 
 Instructions:
 
@@ -29,10 +46,6 @@ Highlight specific accomplishments or awards mentioned in [PROFESSIONAL ACHIEVEM
 
 Work Experience
 Mention the name of the institution from [PRIOR WORK PLACE]. Elaborate on the position described in [DESCRIPTION OF POSITION], including key responsibilities and achievements. Include details of key projects from [KEY PROJECTS SEPARATED BY COMMAS].
-Format the work experiences as follows:
-Company Name
-Position: Position
-Description
 
 Education
 
@@ -54,4 +67,4 @@ Mention memberships in professional organizations or networks relevant to your f
 References
 Available upon request.
 
-Note: The input provided above should be used to generate the resume in the specified format.]
+Note: The input provided above should be used to generate the resume in the specified format.
