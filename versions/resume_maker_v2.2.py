@@ -48,12 +48,14 @@
 # make it so that you can email the finished resume to yourself if you want to by typing in your email address, create an email adress and get SMTP adress so i can create it (email name should be somthing along the lines of resume generator) -- undone
 
 # check if it is possible to get a nicer voice to talk to you in the voice assisted version -- undone
+
+# make it talk out what it is doing in the voice assist version (transcribing, processing etc. ) and let it give confirmation that it heard what you said
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 
     
 import customtkinter as ctk
 from tkinter import messagebox
-import os
+import os   
 import pyaudio
 import wave
 import tempfile
