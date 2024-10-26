@@ -3,7 +3,9 @@
 
 import sys
 import os
-from PyInstaller.utils.hooks import collect_all
+from PyInstaller.utils.hooks import collect_all, collect_submodules, collect_data_files
+import comtypes  # Ensure comtypes is imported
+import comtypes.client  # Ensure comtypes.client is imported
 
 # Define a function to locate resource files
 def resource_path(relative_path):
@@ -13,6 +15,7 @@ def resource_path(relative_path):
     except AttributeError:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
+
 
 # Specify the main script
 main_script = 'resume_maker_v2.9.py'  # Replace with your actual script name
@@ -77,8 +80,24 @@ hiddenimports = [
     'pyttsx3.drivers',
     'pyttsx3.drivers.sapi5',
     'PIL.Image',
-    'PIL._imagingtk'
+    'PIL._imagingtk',
+    'win32com',
+    'win32com.client',
+    'comtypes.client',
+    'comtypes.gen',
+    'comtypes.client._generate',
 ]
+
+# Collect all submodules and data files for comtypes
+comtypes_submodules = collect_submodules('comtypes')
+comtypes_data_files = collect_data_files('comtypes')
+
+hiddenimports += comtypes_submodules
+datas += comtypes_data_files
+
+# Include comtypes.gen directory
+comtypes_gen_dir = os.path.join(os.path.dirname(comtypes.__file__), 'gen')
+datas += [(comtypes_gen_dir, 'comtypes/gen')]
 
 # Collect all dependencies for webrtcvad
 webrtcvad_datas, webrtcvad_binaries, webrtcvad_hiddenimports = collect_all('webrtcvad')
