@@ -2571,31 +2571,33 @@ def initialize_manual_gui():
     )
     next_button.grid(row=1, column=3, padx=10, pady=10, sticky="ew")
 
-    # # Save Resume Button
-    # save_button = ctk.CTkButton(
-    #     button_frame,
-    #     text="Save Resume",
-    #     image=save_icon,
-    #     compound="left",
-    #     command=save_resume,
-    #     width=150,
-    #     height=40,
-    #     font=("Helvetica", 12)
-    # )
-    # save_button.grid(row=1, column=2, padx=10, pady=10)
+    # Save Resume Button
+    save_button = ctk.CTkButton(
+        button_frame,
+        text="Save Resume",
+        image=save_icon,
+        compound="left",
+        command=save_resume,
+        width=150,
+        height=40,
+        font=("Helvetica", 12)
+    )
+    save_button.grid(row=1, column=2, padx=10, pady=10)
+    save_button.grid_remove()  # Hides the button after adding it to the layout
 
-    # # Generate Formatted Resume Button
-    # generate_button = ctk.CTkButton(
-    #     button_frame,
-    #     text="Generate Formatted Resume",
-    #     image=save_icon,  # Reusing save icon, consider adding a different icon
-    #     compound="left",
-    #     command=generate_and_save_formatted_resume,
-    #     width=220,
-    #     height=40,
-    #     font=("Helvetica", 12)
-    # )
-    # generate_button.grid(row=1, column=3, padx=10, pady=10)
+    # Generate Formatted Resume Button
+    generate_button = ctk.CTkButton(
+        button_frame,
+        text="Generate Formatted Resume",
+        image=save_icon,  # Reusing save icon, consider adding a different icon
+        compound="left",
+        command=generate_and_save_formatted_resume,
+        width=220,
+        height=40,
+        font=("Helvetica", 12)
+    )
+    generate_button.grid(row=1, column=3, padx=10, pady=10)
+    generate_button.grid_remove()  # Hides the button after adding it to the layout
 
     # Create Finished Resume Button
     create_resume_button = ctk.CTkButton(
