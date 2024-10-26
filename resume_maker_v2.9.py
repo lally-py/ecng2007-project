@@ -12,11 +12,11 @@
 # create spec file for exe generation with pyinstaller -- done
 
 
+
+
+
 # voice walkthrough ease of  use, you can stop the voice walkthrough at any time and go back to the home page, this should stop all operationa like tts, transcription, stt, etc. and should reset all the data gathered and should also reset the gui so that it just shows the start page -- hard
-
 # center buttons in the manual gui , and add context text for each question that shows up in the gui -- undone
-
-
 # remove unnecessary functions
 # organise code
 #-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -1090,9 +1090,9 @@ def voice_walkthrough():
     # After all questions are done
     root.after(0, update_status, "Voice Walkthrough Completed")
     # Generate and save the formatted resume
-    generate_and_save_formatted_resume()
+    create_finished_resume()
     # Inform the user
-    assistant_say("Voice walkthrough completed. Your formatted resume has been generated and saved.")
+    assistant_say("Voice walkthrough completed. Your formatted resume has been generated and saved to your selected file location, or if none has been selected it is saved in your downloads folder.")
 
 
 
