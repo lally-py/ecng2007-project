@@ -43,6 +43,7 @@ datas = [
     ('.env', '.'),                              # Copy .env to root
 ]
 
+<<<<<<< HEAD
 # Collect Python DLL and other necessary binaries
 python_dll = os.path.join(sys.base_prefix, "python312.dll")
 if not os.path.exists(python_dll):
@@ -53,6 +54,10 @@ if not os.path.exists(python_dll):
 binaries = [
     (python_dll, "."),  # Include python312.dll in the root of the executable
 ]
+=======
+# Include additional binary files if necessary
+binaries = []
+>>>>>>> c40c2468dba81861f891e240265303bfe5286d3d
 
 # Hidden imports (if any)
 hiddenimports = [
@@ -166,4 +171,8 @@ coll = COLLECT(
     upx=True,
     upx_exclude=[],
     name='ResumeGenerator'
+<<<<<<< HEAD
 )
+=======
+)
+>>>>>>> c40c2468dba81861f891e240265303bfe5286d3d

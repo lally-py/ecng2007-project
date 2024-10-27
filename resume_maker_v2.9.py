@@ -13,6 +13,8 @@
 
 
 
+
+
 # voice walkthrough ease of  use, you can stop the voice walkthrough at any time and go back to the home page, this should stop all operationa like tts, transcription, stt, etc. and should reset all the data gathered and should also reset the gui so that it just shows the start page -- hard
 # center buttons in the manual gui , and add context text for each question that shows up in the gui -- undone
 # remove unnecessary functions
