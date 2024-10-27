@@ -8,15 +8,16 @@
 # talk out what is being doing in the voice assist version (transcribing, processing etc. ) and let it give confirmation that it heard what you said -- done
 # speak after beep in voice walkthrough -- done
 # update all file paths for building into an application -- done
+# remove old buttons for saving from the main gui -- done
 
 
 
-# voice walkthrough ease of  use, you can stop the voice walkthrough at any time and go back to the home page, this should stop all operationa like tts, transcription, stt, etc. and should reset all the data gathered and should also reset the gui so that it just shows the start page
+# voice walkthrough ease of  use, you can stop the voice walkthrough at any time and go back to the home page, this should stop all operationa like tts, transcription, stt, etc. and should reset all the data gathered and should also reset the gui so that it just shows the start page -- hard
 
-# remove old buttons for saving from the main gui 
+# center buttons in the manual gui , and add context text for each question that shows up in the gui -- undone
+
 
 # remove unnecessary functions
-
 # organise code
 #-----------------------------------------------------------------------------------------------------------------------------------------#
     
@@ -2542,7 +2543,7 @@ def initialize_manual_gui():
         height=40,
         font=("Helvetica", 12)
     )
-    skip_button.grid(row=0, column=4, padx=10, pady=10)
+    skip_button.grid(row=0, column=4, padx=10, pady=10, sticky="ew")
 
     # Previous Button
     prev_button = ctk.CTkButton(
@@ -2555,7 +2556,7 @@ def initialize_manual_gui():
         height=40,
         font=("Helvetica", 12)
     )
-    prev_button.grid(row=0, column=5, padx=10, pady=10)
+    prev_button.grid(row=1, column=2, padx=10, pady=10, sticky="ew")
 
     # Next Button
     next_button = ctk.CTkButton(
@@ -2568,7 +2569,7 @@ def initialize_manual_gui():
         height=40,
         font=("Helvetica", 12)
     )
-    next_button.grid(row=0, column=6, padx=10, pady=10)
+    next_button.grid(row=1, column=3, padx=10, pady=10, sticky="ew")
 
     # Save Resume Button
     save_button = ctk.CTkButton(
@@ -2582,6 +2583,7 @@ def initialize_manual_gui():
         font=("Helvetica", 12)
     )
     save_button.grid(row=1, column=2, padx=10, pady=10)
+    save_button.grid_remove()  # Hides the button after adding it to the layout
 
     # Generate Formatted Resume Button
     generate_button = ctk.CTkButton(
@@ -2595,6 +2597,7 @@ def initialize_manual_gui():
         font=("Helvetica", 12)
     )
     generate_button.grid(row=1, column=3, padx=10, pady=10)
+    generate_button.grid_remove()  # Hides the button after adding it to the layout
 
     # Create Finished Resume Button
     create_resume_button = ctk.CTkButton(

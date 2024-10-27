@@ -9,14 +9,12 @@
 # speak after beep in voice walkthrough -- done
 # update all file paths for building into an application -- done
 # remove old buttons for saving from the main gui -- done
+# create spec file for exe generation with pyinstaller -- done
 
 
 
 # voice walkthrough ease of  use, you can stop the voice walkthrough at any time and go back to the home page, this should stop all operationa like tts, transcription, stt, etc. and should reset all the data gathered and should also reset the gui so that it just shows the start page -- hard
-
 # center buttons in the manual gui , and add context text for each question that shows up in the gui -- undone
-
-
 # remove unnecessary functions
 # organise code
 #-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -53,6 +51,10 @@ from datetime import datetime
 from tkinter import filedialog
 from playsound import playsound 
 import sys
+import traceback
+import comtypes.client
+
+
 
 # Get absolute path to resource, works for dev and PyInstaller
 def resource_path(relative_path):
@@ -417,14 +419,27 @@ def create_resume_document(data, output_docx):
 
     # Save the document
     doc.save(output_docx)
+      
 
 
-# Converts the Word document to PDF using docx2pdf.
 def convert_to_pdf(word_file, pdf_file):
     try:
-        convert(word_file, pdf_file)
+        # Create an instance of Word Application
+        word = comtypes.client.CreateObject('Word.Application')
+        word.Visible = False
+
+        # Open the Word document
+        doc = word.Documents.Open(os.path.abspath(word_file))
+
+        # Save as PDF (FileFormat=17 corresponds to PDF format)
+        doc.SaveAs(os.path.abspath(pdf_file), FileFormat=17)
+
+        # Close the document and Word application
+        doc.Close()
+        word.Quit()
     except Exception as e:
-        messagebox.showerror("Error", f"Failed to convert to PDF: {e}")
+        traceback_str = traceback.format_exc()
+        messagebox.showerror("Error", f"Failed to convert to PDF: {e}\n\n{traceback_str}")
 
 
 def create_finished_resume():
@@ -1073,9 +1088,9 @@ def voice_walkthrough():
     # After all questions are done
     root.after(0, update_status, "Voice Walkthrough Completed")
     # Generate and save the formatted resume
-    generate_and_save_formatted_resume()
+    create_finished_resume()
     # Inform the user
-    assistant_say("Voice walkthrough completed. Your formatted resume has been generated and saved.")
+    assistant_say("Voice walkthrough completed. Your formatted resume has been generated and saved to your selected file location, or if none has been selected it is saved in your downloads folder.")
 
 
 
