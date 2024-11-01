@@ -156,4 +156,3 @@ python resume_maker_2.4.py
 5. **Finalization**:
    - Allows users to review, save, and export their completed resumes.
    - Provides options to clear data, recover sessions, or adjust settings as needed.
-
