@@ -6,14 +6,14 @@ Input:
 
 Instructions:
 
-Use the provided details to generate a resume in the following format. Ensure clarity and specificity in each section based on the details given. Reword and refine the content to maintain a professional tone and proper grammar.
+Use the provided details to generate a resume in the following format. Ensure clarity and specificity in each section based on the details given. Reword and refine the content to maintain a professional tone and proper grammar. If there is no data for a section then it should be disreguarded.
 
 Output Format:
 
 [NAME]
 [CONTACT NUMBER]
-[EMAIL ADDRESS]
-[ADDRESS]
+[EMAIL ADDRESS] - Please auto-correct the email address by replacing the domain that follows "at" with the most similar known domain from your stored list. Ensure that the final email address is valid, properly formatted, and accurately reflects the intended email service.
+[ADDRESS] - Please auto-correct the address. If there are two versions of the address, compare them and select the correct one. Ensure the final output is coherent and does not append the corrected spelling at the end of the original address.
 
 Professional Summary
 Create a 50-word professional summary using the words from [PERSONAL DESCRIPTIONS SEPARATED BY COMMAS]. The summary should highlight key strengths, qualities, and professional attributes, including career goals and how past experiences align with industry trends.

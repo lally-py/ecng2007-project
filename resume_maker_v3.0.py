@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------------------------------------------------------------------------#
 # voice walkthrough ease of  use, you can stop the voice walkthrough at any time and go back to the home page, this should stop all operationa like tts, transcription, stt, etc. and should reset all the data gathered and should also reset the gui so that it just shows the start page -- hard
-# center buttons in the manual gui , and add context text for each question that shows up in the gui -- undone
+# add context text for each question that shows up in the gui -- undone
 # remove unnecessary functions
 # organise code
 #-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -449,7 +449,7 @@ def create_finished_resume():
             try:
                 with open(text_file, 'w', encoding='utf-8') as f:
                     f.write(formatted_resume)
-                messagebox.showinfo("Info", "Formatted resume has been generated, please wait while the finished resume is generated.")
+                # messagebox.showinfo("Info", "Formatted resume has been generated, please wait while the finished resume is generated.")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to save formatted resume: {e}")
                 return
