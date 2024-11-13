@@ -1,12 +1,3 @@
-#-------------------------------------------------------------------------------------------------------------------------------------------#
-# voice walkthrough ease of  use, you can stop the voice walkthrough at any time and go back to the home page, this should stop all operationa like tts, transcription, stt, etc. and should reset all the data gathered and should also reset the gui so that it just shows the start page -- hard
-# add context text for each question that shows up in the gui -- undone
-# remove unnecessary functions
-# organise code
-#-----------------------------------------------------------------------------------------------------------------------------------------#
-    
-    
-    
 import customtkinter as ctk
 from tkinter import messagebox
 import os   
@@ -36,11 +27,10 @@ from docx.enum.style import WD_STYLE_TYPE
 from docx2pdf import convert
 from datetime import datetime
 from tkinter import filedialog
-from playsound import playsound 
 import sys
 import traceback
 import comtypes.client
-
+import winsound
 
 
 # Get absolute path to resource, works for dev and PyInstaller
@@ -935,7 +925,7 @@ def reset_voice_walkthrough():
 def play_beep_sound():
     def play_sound():
         try:
-            playsound(resource_path('beep.mp3'))
+            winsound.PlaySound(resource_path('beep.wav'), winsound.SND_FILENAME | winsound.SND_ASYNC)
         except Exception as e:
             print(f"Error playing beep sound: {e}")
     threading.Thread(target=play_sound).start()
@@ -2374,6 +2364,7 @@ def start_voice_mode(start_frame):
 # Function to initialize the voice GUI
 def initialize_voice_gui():
     global status_label, question_label, transcribed_label, resume_preview_textbox
+
     # Create a frame for the voice mode
     voice_frame = ctk.CTkFrame(root, corner_radius=10)
     voice_frame.pack(pady=10, padx=20, fill="both", expand=True)
@@ -2382,58 +2373,70 @@ def initialize_voice_gui():
     status_frame = ctk.CTkFrame(voice_frame, corner_radius=10)
     status_frame.pack(pady=10, padx=20, fill="x")
 
-    # Status Label
+    # Status Label (Centered and with increased wraplength)
     status_label = ctk.CTkLabel(
         status_frame,
         text="Status: Starting Voice Walkthrough...",
-        wraplength=760,
-        font=("Helvetica", 14, "italic")
+        wraplength=900,  # Increased for better readability
+        font=("Helvetica", 14, "italic"),
+        anchor="center"  # Center-align the text
     )
-    status_label.pack(pady=5, padx=20, anchor="w")
+    status_label.pack(pady=5, padx=20, anchor="center")  # Centered within the frame
 
-    # Frame for Question and Transcription
-    question_transcription_frame = ctk.CTkFrame(voice_frame, corner_radius=10)
-    question_transcription_frame.pack(pady=10, padx=20, fill="x")
+    # Frame for Question Label
+    question_frame = ctk.CTkFrame(voice_frame, corner_radius=10)
+    question_frame.pack(pady=10, padx=20, fill="x")
 
-    # Label to display the current question
+    # Label to display the current question (Centered and with larger font)
     question_label = ctk.CTkLabel(
-        question_transcription_frame,
+        question_frame,
         text="",
-        wraplength=760,
-        font=("Helvetica", 16, "bold")
+        wraplength=900,  # Increased wraplength
+        font=("Helvetica", 20, "bold"),  # Larger font and bold
+        anchor="center"  # Center-align the text
     )
-    question_label.pack(pady=5, padx=20, anchor="w")
+    question_label.pack(pady=(20, 10), padx=20, fill="x")
 
-    # Label to display transcription
+    # Frame for Transcription Label
+    transcription_frame = ctk.CTkFrame(voice_frame, corner_radius=10)
+    transcription_frame.pack(pady=10, padx=20, fill="x")
+
+    # Label to display transcription in a distinct block (Centered and with padding)
     transcribed_label = ctk.CTkLabel(
-        question_transcription_frame,
+        transcription_frame,
         text="Transcription: ",
-        wraplength=760,
-        font=("Helvetica", 12)
+        wraplength=800,
+        font=("Helvetica", 16),  # Larger font for readability
+        anchor="center",  # Center-align the transcription
+        padx=20,  # Add padding for a spacious look
+        pady=10
     )
-    transcribed_label.pack(pady=5, padx=20, anchor="w")
+    transcribed_label.pack(fill="x")
+
+    # Resume Preview Frame
+    preview_frame = ctk.CTkFrame(voice_frame, corner_radius=10)
+    preview_frame.pack(pady=10, padx=20, fill="both", expand=True)
 
     # Resume Preview Label
     resume_preview_label = ctk.CTkLabel(
-        voice_frame,
+        preview_frame,
         text="Resume Preview:",
         font=("Helvetica", 16, "bold")
     )
-    resume_preview_label.pack(pady=(20, 5), padx=20, anchor="w")
+    resume_preview_label.pack(pady=(10, 5), padx=10, anchor="w")
 
     # Resume Preview Textbox
     resume_preview_textbox = ctk.CTkTextbox(
-        voice_frame,
-        width=760,
-        height=300,
+        preview_frame,
         wrap="word",
-        font=("Helvetica", 12)
+        font=("Consolas", 12)
     )
-    resume_preview_textbox.pack(pady=5, padx=20)
+    resume_preview_textbox.pack(pady=5, padx=10, fill="both", expand=True)
     resume_preview_textbox.configure(state="disabled")  # Make it read-only
 
     # Update the GUI with the current question
     update_question_voice_mode(current_question)
+
 
 def update_add_more_button_state():
     question = questions[current_question]

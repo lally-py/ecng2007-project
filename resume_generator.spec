@@ -19,14 +19,14 @@ def resource_path(relative_path):
 
 
 # Specify the main script
-main_script = 'resume_maker_v2.9.py'  # Replace with your actual script name
+main_script = 'resume_maker_v3.0.py'  # Replace with your actual script name
 
 # Collect data files and directories
 datas = [
     ('questions.json', '.'),                   # Copy to root
     ('trinidad_locations.txt', '.'),           # Copy to root
     ('resume_prompt.txt', '.'),                # Copy to root
-    ('beep.mp3', '.'),                         # Copy to root
+    ('beep.wav', '.'),                         # Copy to root
     ('icons/manual_icon.png', 'icons'),        # Copy to icons folder
     ('icons/voice_icon.png', 'icons'),
     ('icons/start_icon.png', 'icons'),
@@ -43,7 +43,6 @@ datas = [
     ('.env', '.'),                              # Copy .env to root
 ]
 
-<<<<<<< HEAD
 # Collect Python DLL and other necessary binaries
 python_dll = os.path.join(sys.base_prefix, "python312.dll")
 if not os.path.exists(python_dll):
@@ -54,10 +53,6 @@ if not os.path.exists(python_dll):
 binaries = [
     (python_dll, "."),  # Include python312.dll in the root of the executable
 ]
-=======
-# Include additional binary files if necessary
-binaries = []
->>>>>>> c40c2468dba81861f891e240265303bfe5286d3d
 
 # Hidden imports (if any)
 hiddenimports = [
@@ -89,7 +84,6 @@ hiddenimports = [
     'datetime',
     'tkinter',
     'tkinter.filedialog',
-    'playsound',
     'comtypes',
     'pyttsx3.drivers',
     'pyttsx3.drivers.sapi5',
@@ -100,6 +94,7 @@ hiddenimports = [
     'comtypes.client',
     'comtypes.gen',
     'comtypes.client._generate',
+    'pyttsx3.drivers.dummy', 
 ]
 
 # Collect all submodules and data files for comtypes
@@ -171,8 +166,4 @@ coll = COLLECT(
     upx=True,
     upx_exclude=[],
     name='ResumeGenerator'
-<<<<<<< HEAD
 )
-=======
-)
->>>>>>> c40c2468dba81861f891e240265303bfe5286d3d
