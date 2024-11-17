@@ -1,6 +1,7 @@
 # resume_generator.spec
 # -*- mode: python ; coding: utf-8 -*-
-# Try building wthouth one file
+# To run this file run "pyinstaller resume_generator.spec" in the terminal
+
 
 import sys
 import os

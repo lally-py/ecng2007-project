@@ -1,5 +1,9 @@
-
 # Project Title: Resume Generator with Voice Input
+
+This repository contains the code for the ECNG 2007 Software Project.
+
+## GitHub Repository Link
+[https://github.com/lally-py/ecng2007-project](https://github.com/lally-py/ecng2007-project)
 
 ## Overview
 This project is a resume generator application with both manual input and voice-assisted input modes. The application uses OpenAI's GPT-3.5-turbo for rewording text responses and Whisper for speech recognition. It allows users to build their resume by answering a set of questions through voice or manual input, rewords the responses in a professional tone, and generates a formatted resume.
