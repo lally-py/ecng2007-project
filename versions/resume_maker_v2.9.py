@@ -28,15 +28,9 @@ import threading
 import requests  # interacts with OpenAI directly through HTTP
 import pyttsx3  # For text-to-speech
 import speech_recognition as sr  # For real-time speech recognition
-import openai  # Added for OpenAI SDK if required
 from PIL import Image  # For handling images/icons
-import whisper
-import numpy as np
-import sounddevice as sd
 import time
-import io
 import webrtcvad
-import collections
 from fuzzywuzzy import process
 import json
 from dotenv import load_dotenv
@@ -51,6 +45,12 @@ from playsound import playsound
 import sys
 import traceback
 import comtypes.client
+import openai  # Added for OpenAI SDK if required
+import whisper
+import numpy as np
+import sounddevice as sd
+import io
+import collections
 
 
 

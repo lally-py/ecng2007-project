@@ -1,36 +1,30 @@
-import customtkinter as ctk
-from tkinter import messagebox
-import os   
-import pyaudio
-import wave
-import tempfile
-import threading
-import requests  # interacts with OpenAI directly through HTTP
+import customtkinter as ctk  # For modern GUI design
+from tkinter import messagebox  # To show pop-up alerts
+import os  # For file and path handling
+import pyaudio  # For audio recording/playback
+import wave  # To read/write WAV files
+import tempfile  # For temporary file creation
+import threading  # To run tasks in parallel
+import requests  # For API requests
 import pyttsx3  # For text-to-speech
-import speech_recognition as sr  # For real-time speech recognition
-import openai  # Added for OpenAI SDK if required
-from PIL import Image  # For handling images/icons
-import whisper
-import numpy as np
-import sounddevice as sd
-import time
-import io
-import webrtcvad
-import collections
-from fuzzywuzzy import process
-import json
-from dotenv import load_dotenv
-import docx
-from docx.shared import Pt, Inches
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from docx.enum.style import WD_STYLE_TYPE
-from docx2pdf import convert
-from datetime import datetime
-from tkinter import filedialog
-import sys
-import traceback
-import comtypes.client
-import winsound
+import speech_recognition as sr  # For speech-to-text
+from PIL import Image  # For image processing
+import time  # For time-related functions
+import webrtcvad  # For voice activity detection
+from fuzzywuzzy import process  # For fuzzy string matching
+import json  # For handling JSON data
+from dotenv import load_dotenv  # To load environment variables
+import docx  # To create/edit Word documents
+from docx.shared import Pt, Inches  # To format Word document text and layout
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT  # To align Word document text
+from docx.enum.style import WD_STYLE_TYPE  # To apply Word styles
+from docx2pdf import convert  # To convert Word to PDF
+from datetime import datetime  # For date/time handling
+from tkinter import filedialog  # To open file dialogs
+import sys  # For system-specific functions
+import traceback  # For error tracebacks
+import comtypes.client  # For COM object automation
+import winsound  # To play sound or system beeps
 
 
 # Get absolute path to resource, works for dev and PyInstaller
