@@ -20,8 +20,8 @@ Before running the application, make sure the following tools and dependencies a
 
 ### 3. Clone the repository
 ```bash
-git clone https://github.com/yourusername/resume-generator
-cd resume-generator
+git clone https://github.com/lally-py/ecng2007-project.git
+cd ecng2007-project
 ```
 
 ### 4. Install Dependencies
